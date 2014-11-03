@@ -1,0 +1,9 @@
+Package: fitnoise
+Version: 0.0
+License: GPL-2
+Title: Fitnoise R component
+Description: The R component of Fitnoise.
+Author: Paul Harrison
+Maintainer: Paul Harrison <pfh@logarithmic.net>
+Depends: limma, Matrix, parallel
+Suggests:
