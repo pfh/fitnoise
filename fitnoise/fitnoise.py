@@ -569,7 +569,7 @@ class Model(object):
     
     def fit_noise(self, data, 
             noise_design=None, 
-            control_design=None, controls=None, use_theano=True,verbose=True):
+            control_design=None, controls=None, use_theano=True,verbose=False):
         data = as_dataset(data)
         noise_design = as_matrix(noise_design)
         
@@ -657,6 +657,9 @@ class Model_t_mixin(Model):
 
 
 class Model_normal_standard(Model):
+    def _describe_noise(self, param):
+        return "s.d. = %f\n" % numpy.sqrt(param[0])
+    
     def _get_dist(self, param, aux):
         m = self.data.y.shape[1]
         return Mvnormal(

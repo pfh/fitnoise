@@ -16,8 +16,8 @@ library(parallel)
 # Utility functions
 ##################################
 
-optim.positive <- function(initial, func) {
-    if (length(initial) == 0)
+optim.positive <- function(initial, func, optimize=TRUE) {
+    if (length(initial) == 0 || !optimize)
         return(list(par=initial))
 
     result <- optim(rep(0,length(initial)), function(x) func(exp(x)*initial))
@@ -292,7 +292,7 @@ conditional.mvt <- function(self, i1, i2, x2) {
 #
 #
 fit.noise <- function(data, design, get.dist, initial, 
-        controls=NULL, control.design=NULL, cores=1) {
+        controls=NULL, control.design=NULL, cores=1, optimize=TRUE) {
 
     if (is.null(controls))
         controls <- rep(FALSE, nrow(data))
@@ -369,7 +369,7 @@ fit.noise <- function(data, design, get.dist, initial,
         cluster <- makeForkCluster(cores)
     }
     
-    result <- optim.positive(initial, scorer)
+    result <- optim.positive(initial, scorer,  optimize=optimize)
 
 
     #
@@ -478,12 +478,12 @@ fit.coef <- function(fit, design) {
 
 fit <- function(data, design, get.dist, initial, noise.design=NULL, 
         controls=NULL, control.design=NULL,
-        cores=1) {
+        cores=1, optimize=TRUE) {
     if (is.null(noise.design))
         noise.design <- design
     
     fitted <- fit.noise(data, noise.design, get.dist, initial, 
-        controls=controls, control.design=control.design, cores=cores)
+        controls=controls, control.design=control.design, cores=cores, optimize=optimize)
     
     fit.coef(fitted, design)
 }
@@ -555,7 +555,7 @@ weights.matrix <- function(fit) {
 # Noise models for EList objects
 ##################################
 
-normal.model.to.t <- function(model) list(
+normal.model.to.t <- function(model, python.model.name=NULL) list(
     get.dist = function(elist, i, param) {
         normal.dist <- model$get.dist(elist, i, param[-1])
         mvt(normal.dist$mean, normal.dist$covar, param[1])
@@ -566,7 +566,9 @@ normal.model.to.t <- function(model) list(
     describe = function(elist, param) {
         normal.desc <- model$describe(elist, param[-1])
         sprintf('prior df = %g\n%s', param[1], normal.desc)
-    }
+    },
+    
+    python.model.name = python.model.name
 )
 
 
@@ -589,10 +591,12 @@ model.normal.standard <- list(
             sprintf('s.d. = %g', sqrt(param[1]))
         else
             sprintf('s.d. = %g / sqrt(weight)', sqrt(param[1]))
-    }
+    },
+    
+    python.model.name = "model_normal_standard"
 )
 
-model.t.standard <- normal.model.to.t(model.normal.standard)
+model.t.standard <- normal.model.to.t(model.normal.standard, "model_t_standard")
 
 
 model.t.independent <- list(
@@ -715,24 +719,45 @@ fit.elist <- function(
         control.design=NULL,
         cores=1,
         python=FALSE) {
+    
+    optimize = TRUE
+    initial = model$initial(elist)
+    
     if (python) {
-    
-        library(rPython)
-        python.exec("import fitnoise")
-        ...
-    
-    } else { 
-        result <- fit(
-            data = elist$E,
-            design = design,
-            get.dist = function(i,param) model$get.dist(elist,i,param),
-            initial = model$initial(elist),
-            noise.design = noise.design,
-            controls = controls,
-            control.design= control.design,
-            cores = cores
-            )    
+        if (is.null(model$python.model.name)) {
+            warning("No python optimizer for this noise model")
+        } else {    
+            pyload()
+            pyset("y", elist$E)
+            pyset("design", design)
+            pyset("model_name", model$python.model.name)
+            pyset("controls", controls)
+            pyset("control_design", control.design)
+            rPython::python.exec("result = (
+                getattr(fitnoise,model_name)
+                .fit_noise(
+                    y,
+                    design,
+                    )
+                )")
+                
+            initial <- pyget("result.param")
+            optimize <- FALSE
+        }
     }
+    
+    
+    result <- fit(
+        data = elist$E,
+        design = design,
+        get.dist = function(i,param) model$get.dist(elist,i,param),
+        initial = initial,
+        noise.design = noise.design,
+        controls = controls,
+        control.design= control.design,
+        cores = cores,
+        optimize = optimize
+        )    
     
     result$elist <- elist    
     result$noise.description <- sprintf(

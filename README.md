@@ -36,9 +36,12 @@ The following creates a virtualenv for both Python and R:
 
     virtualenv --clear --system-site-packages venv
     mkdir venv/R
+
     echo 'export R_LIBS=$VIRTUAL_ENV/R' >>venv/bin/activate    
-    echo ". `pwd`/venv/bin/activate && `which R` "'$@' >venv/bin/R
-    echo ". `pwd`/venv/bin/activate && `which Rscript` "'$@' >venv/bin/Rscript
+    echo 'import os;os.environ["R_LIBS"]="'`pwd`'/venv/R"' >venv/lib/python*/sitecustomize.py
+
+    echo ". `pwd`/venv/bin/activate && `which R` \$@" >venv/bin/R
+    echo ". `pwd`/venv/bin/activate && `which Rscript` \$@" >venv/bin/Rscript
     chmod a+x venv/bin/R venv/bin/Rscript
 
 To install Fitnoise type
