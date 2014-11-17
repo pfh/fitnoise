@@ -1,13 +1,15 @@
 Fitnoise
 ===
 
-Fitnoise comprises Python 2 and R packages for statistical analysis of RNA-Seq data.
+Fitnoise is a Python 2 library for statistical analysis of RNA-Seq data.
+
+A lightweight R wrapper is provided to allow access from R.
+
+Fitnoise uses the Theano deep-learning library for speed.
 
 
 This iteration of Fitnoise is not yet complete.
 
-
-Python and Theano are used for speed. R support is provided as R/Bioconductor is the more mature bioinformatics environment.
 
 
 Installing
@@ -21,7 +23,7 @@ Installing dependencies:
     R
     install.packages("rPython")
     source("http://bioconductor.org/biocLite.R")
-    biocLite("limma") 
+    biocLite("limma")
 
 Installing Fitnoise from source:
     

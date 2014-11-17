@@ -19,336 +19,15 @@ check L'i = Li' ... yes
 
 """
 
-import warnings, copy
+from .env import *
+from .distributions import Mvnormal, Mvt
+from . import p_adjust
 
-have_theano = False
-try:
-    import theano
-    from theano import tensor
-    from theano import gradient
-    try:
-        from theano.tensor import nlinalg, slinalg
-        have_theano = True
-    except:
-        warnings.warn("Couln't import linear algebra for theano, need a more recent version")
-except:
-    pass
 
-
-import numpy, numpy.linalg, numpy.random
-import scipy, scipy.optimize, scipy.stats, scipy.special
-
-
-
-def is_theanic(x):
-    return have_theano and isinstance(x, tensor._tensor_py_operators)
-
-def as_tensor(x, dtype='float64'):
-    if not isinstance(x, numpy.ndarray) and \
-       not is_theanic(x):
-        x = numpy.array(x)            
-
-    if not x.dtype == dtype:
-        x = x.astype(dtype)
-
-    return x
-
-    
-def as_scalar(x, dtype='float64'):
-    x = as_tensor(x, dtype)
-    assert x.ndim == 0
-    return x
-
-
-def as_vector(x, dtype='float64'):
-    x = as_tensor(x, dtype)
-    assert x.ndim == 1
-    return x
-
-
-def as_matrix(x, dtype='float64'):
-    x = as_tensor(x, dtype)
-    assert x.ndim == 2
-    return x
-
-
-def dot(a,b):
-    a = as_tensor(a)
-    b = as_tensor(b)
-    return (
-        tensor.dot if is_theanic(a) or is_theanic(b) 
-        else numpy.dot
-        )(a,b)
-
-
-def take(a,indices,axis):
-    if is_theanic(a) or is_theanic(indices):
-        return tensor.take(a,indices,axis)
-    else:
-        return numpy.take(a,indices,axis)
-
-
-def take2(a,i0,i1):
-    return take(take(a,i0,0),i1,1)
-
-
-def diag(x):
-    x = as_tensor(x)
-    return tensor.diag(x) if is_theanic(x) else numpy.diag(x)
-
-
-def log(x):
-    x = as_tensor(x)
-    return tensor.log(x) if is_theanic(x) else numpy.log(x)
-
-
-def exp(x):
-    x = as_tensor(x)
-    return tensor.exp(x) if is_theanic(x) else numpy.exp(x)
-
-
-#From Numerical Recipes in C
-def lanczos_gammaln(x):
-    x = as_tensor(x)
-    y = x
-    tmp = x + 5.5
-    tmp = tmp - (x+0.5)*log(tmp)
-    ser = 1.000000000190015
-    for cof in (
-        76.18009172947146, 
-        -86.50532032941677, 
-        24.01409824083091, 
-        -1.231739572450155, 
-        0.1208650973866179e-2, 
-        -0.5395239384953e-5,
-        ):
-        y = y + 1
-        ser = ser + cof / y
-    return -tmp + log(2.5066282746310005*ser/x)
-
-
-def gammaln(x):
-    x = as_tensor(x)
-    return lanczos_gammaln(x) if is_theanic(x) else scipy.special.gammaln(x)
-
-
-#for i in xrange(1,10):
-#    x = i
-#    print numpy.exp(gammaln(x)), numpy.exp(lanczos_gammaln(x))
-#import sys;sys.exit(0)
-
-
-def inverse(A):
-    A = as_matrix(A)
-    return (nlinalg.matrix_inverse if is_theanic(A) else numpy.linalg.inv)(A)
-
-
-def det(A):
-    A = as_matrix(A)
-    return (nlinalg.det if is_theanic(A) else numpy.linalg.det)(A)
-
-#Doesn't have gradient
-def cholesky(A):
-    A = as_matrix(A)
-    return (slinalg.cholesky if is_theanic(A) else numpy.linalg.cholesky)(A)
-
-
-#Doesn't have gradient
-def qr_complete(A):
-    A = as_matrix(A)
-    if is_theanic(A):
-        return nlinalg.QRFull('complete')(A)
-    else:
-        return numpy.linalg.qr(A, mode="complete")
-
-
-
-# Agnostic as to whether numpy or theano
-# Mvnormal(dvector('mean'), dmatrix('covar'))
-#
-# TODO: maybe store covar as cholesky decomposition
-#
-class Mvnormal(object):
-    def __init__(self, mean, covar):
-        self.mean = as_vector(mean)
-        self.covar = as_matrix(covar)
-
-
-    # Not available for theano
-    @property
-    def good(self):
-        result = numpy.isfinite(self.mean)
-        for i in xrange(len(self.covar)):
-            result = result & numpy.isfinite(self.covar[i])
-        return result
-    
-    
-    def log_density(self, x):
-        x = as_vector(x)
-        offset = x - self.mean
-        n = self.mean.shape[0]
-        
-        #TODO: cleverer linear algebra
-        return -0.5*(
-            log(2*numpy.pi)*n
-            + log(det(self.covar))
-            + dot(offset, dot(inverse(self.covar), offset))
-            )
-
-    
-    def p_value(self, x):
-        x = as_vector(x)
-        offset = x - self.mean
-        df = self.covar.shape[0]
-        q = dot(offset, dot(inverse(self.covar), offset))
-        return stats.chi2.sf(q, df=df)
-    
-    
-    # Not available for theano
-    def random(self):
-        A = cholesky(self.covar)
-        return self.mean + dot(A.T, numpy.random.normal(size=len(self.mean)))
-        
-
-    def transformed(self, A):
-        A = as_matrix(A)
-        return Mvnormal(
-            dot(A,self.mean),
-            dot(dot(A,self.covar),A.T)
-            )
-
-            
-    def shifted(self, x):
-        x = as_matrix(x)
-        return Mvnormal(self.mean+x, self.covar)
-
-
-    def marginal(self, i):
-        i = as_vector(i, 'int32')
-        return Mvnormal(take(self.mean,i,0), take2(self.covar,i,i))
-
-
-    def conditional(self, i1,i2,x2):
-        i1 = as_vector(i, 'int32')
-        i2 = as_vector(i, 'int32')
-        x2 = as_vector(x2)
-        
-        mean1 = take(self.mean,i1,0)
-        mean2 = take(self.mean,i2,0)
-        offset2 = x2-mean2
-        
-        covar11 = take2(self.covar,i1,i1) 
-        covar12 = take2(self.covar,i1,i2)
-        covar21 = take2(self.covar,i2,i1)
-        covar22 = take2(self.covar,i2,i2)
-        covar22inv = inverse(covar22)
-        covar12xcovar22inv = dot(covar12, covar22inv)
-        
-        return Mvnormal(
-            mean1 + dot(covar12xcovar22inv,offset2),
-            covar11 - dot(covar12xcovar22inv,covar21)
-            )
-
-
-class Mvt(object):
-    def __init__(self, mean, covar, df):
-        self.mean = as_vector(mean)
-        self.covar = as_matrix(covar)
-        self.df = as_scalar(df)
-
-
-    @property
-    def good(self):
-        result = numpy.isfinite(self.mean)
-        for i in xrange(len(self.covar)):
-            result = result & numpy.isfinite(self.covar[i])
-        return result
-
-
-    def log_density(self, x):
-        x = as_vector(x)
-        offset = x - self.mean
-        p = self.covar.shape[0]
-        v = self.df
-        return (
-            gammaln(0.5*(v+p))
-            - gammaln(0.5*v)
-            - (0.5*p)*log(numpy.pi*v)
-            - 0.5*log(det(self.covar))
-            - (0.5*(v+p))*log(1+dot(offset, dot(inverse(self.covar), offset))/v)
-            )
-    
-    
-    def p_value(self, x):
-        x = as_vector(x)
-        offset = x - self.mean
-        p = self.covar.shape[0]
-        q = dot(offset, dot(inverse(self.covar), offset)) / p
-        return scipy.stats.f.sf(q, dfn=p, dfd=self.df)
-
-
-    def random(self):
-        A = cholesky(self.covar)
-        return (
-            self.mean 
-            + dot(A.T,numpy.random.normal(size=len(self.mean)))
-              * numpy.sqrt(self.df / numpy.random.chisquare(self.df)) 
-            )
-    
-    
-    def transformed(self, A):
-        A = as_matrix(A)
-        return Mvt(
-            dot(A,self.mean),
-            dot(dot(A,self.covar),A.T),
-            self.df
-            )
-
-            
-    def shifted(self, x):
-        x = as_matrix(x)
-        return Mvt(self.mean+x, self.covar, self.df)
-
-
-    def marginal(self, i):
-        i = as_vector(i, 'int32')
-        return Mvt(take(self.mean,i,0), take2(self.covar,i,i), self.df)
-
-
-    def conditional(self, i1,i2,x2):
-        i1 = as_vector(i, 'int32')
-        i2 = as_vector(i, 'int32')
-        x2 = as_vector(x2)
-        p2 = len(i2)
-        
-        mean1 = take(self.mean,i1,0)
-        mean2 = take(self.mean,i2,0)
-        offset2 = x2-mean2
-        
-        covar11 = take2(self.covar,i1,i1) 
-        covar12 = take2(self.covar,i1,i2)
-        covar21 = take2(self.covar,i2,i1)
-        covar22 = take2(self.covar,i2,i2)
-        covar22inv = inverse(covar22)
-        covar12xcovar22inv = dot(covar12, covar22inv)
-        
-        df = self.df
-        
-        return Mvt(
-            mean1 + dot(covar12xcovar22inv,offset2),
-            (covar11 - dot(covar12xcovar22inv,covar21))
-              * ((df + dot(offset2,dot(covar22inv,offset2))) / (df + p2)),
-            df + p2
-            )
-
-
-
-
-
-
-def _fit_noise(y, designs, get_dist, initial, 
+def _fit_noise(y, designs, get_model_cost, get_dist, initial, 
                aux, bounds, use_theano, verbose):
     n,m = y.shape
+    
     
     items = [ ]
     row_tQ2_z2 = { }
@@ -376,6 +55,9 @@ def _fit_noise(y, designs, get_dist, initial,
             )
     
     
+    if len(initial) == 0:
+       return Withable()._with(x=numpy.zeros(0)), row_tQ2_z2
+    
     if use_theano and not have_theano:
         warnings.warn("Couldn't import theano, calculations may be slow")
         use_theano = False
@@ -383,10 +65,11 @@ def _fit_noise(y, designs, get_dist, initial,
     # Non-theanic
     if not use_theano:
         def score(param):
-            total_value = sum(
-                score_row(param,*item)
-                for item in items
-                )
+            total_value = get_model_cost(param) + \
+                sum(
+                    score_row(param,*item)
+                    for item in items
+                    )
             if verbose:
                 print param, total_value
             return total_value
@@ -417,10 +100,28 @@ def _fit_noise(y, designs, get_dist, initial,
             ],
         on_unused_input="ignore",
         allow_input_downcast=True)
+
+    vcost_value = get_model_cost(vparam)
+    if not is_theanic(vcost_value):
+        # It's a constant, disregard.
+        cost_vg_func = lambda param: None
+    else:
+        vcost_gradient = gradient.grad(vcost_value, vparam)
+        
+        cost_vg_func = theano.function(
+            [vparam], 
+            [],
+            updates=[
+                (svalue,svalue+vcost_value),
+                (sgradient,sgradient+vcost_gradient),
+                ],
+            on_unused_input="ignore",
+            allow_input_downcast=True)
     
     def value_gradient(items, param):
         svalue.set_value(0.0)
         sgradient.set_value(numpy.zeros(len(param)))
+        cost_vg_func(param)
         for item in items:
             vg_func(param,*item)
         if verbose:
@@ -549,43 +250,48 @@ def as_dataset(dataset):
         return dataset
     return Dataset(dataset)
 
+    
 
-class Model(object):
-    def _with(self, **kwargs):
-        result = copy.copy(self)
-        for name in kwargs:
-            setattr(result,name,kwargs[name])
+class Model(Withable):
+    def __init__(self):
+        pass
+
+    def __repr__(self):
+        if hasattr(self,'param'):
+            result = self._describe_noise(self.param)
+            result += 'noise combined p-value = %f\n' % self.noise_combined_p_value
+        else:
+            result = '<%s>\n' % self.__class__.__name__
         return result
     
-    def __repr__(self):
-        result = '%s\n' % self.__class__.__name__
-        if hasattr(self,'param'):
-            result += self._describe_noise(self.param)
-            result += 'noise p-value = %f\n' % self.noise_combined_p_value
-        return result
+    def _unpack(self, packed):
+        return Withable()
     
     def _describe_noise(self, param):
         return ''
     
+    def _model_cost(self, param):
+        return 0.0
+    
     def fit_noise(self, data, 
-            noise_design=None, 
+            design=None, 
             control_design=None, controls=None, use_theano=True,verbose=False):
         data = as_dataset(data)
-        noise_design = as_matrix(noise_design)
+        design = as_matrix(design)
         
         n,m = data.y.shape
-        if noise_design is None: noise_design = numpy.ones((m,1))
+        if design is None: design = numpy.ones((m,1))
         if control_design is None: control_design = numpy.ones((m,1))
         if controls is None: controls = [False]*n
         
-        noise_design = as_matrix(noise_design)
+        design = as_matrix(design)
         control_design = as_matrix(control_design)
         controls = as_vector(controls, 'bool')
         
         result = self._with(
             data=data,
             aux=numpy.zeros((data.y.shape[0],0)),
-            noise_design=noise_design,
+            noise_design=design,
             control_design=control_design,
             controls=controls,
             )
@@ -598,13 +304,17 @@ class Model(object):
             y=result.data.y, 
             designs=designs, 
             aux=result._aux,
-            get_dist=result._get_dist,
+            get_model_cost=lambda param: result._model_cost(result._unpack(param)),
+            get_dist=lambda param, aux: result._get_dist(result._unpack(param),aux),
             initial=result._initial,
             bounds=result._bounds,
             use_theano=use_theano,
             verbose=verbose,
             )
-        param = fit.x
+        param = result._unpack(fit.x)
+        
+        if verbose:
+            print "Model cost:", result._model_cost(param)
         
         noise_dists = [
             result._get_dist(param, result._aux[i])
@@ -635,18 +345,116 @@ class Model(object):
             )
 
 
+    def fit_coef(self, design=None):
+        if design is None:
+            design = self.noise_design
+        design = as_matrix(design)
+    
+        n,m = self.data.y.shape
+        n_coef = design.shape[1]
+        coef_dists = [ None ]*n
+        
+        coef = numpy.tile(numpy.nan, (n,n_coef))
+        #TODO:
+        #coef_lower95 = numpy.tile(numpy.nan, (n,m))
+        #coef_upper95 = numpy.tile(numpy.nan, (n,m))
+        
+        for row in xrange(n):
+            if not self.noise_dists[row]: continue
+
+            retain = numpy.arange(m)[ 
+                numpy.isfinite(self.data.y[row]) & self.noise_dists[row].good
+                ]
+            
+            if len(retain) < n_coef: continue
+            if numpy.linalg.matrix_rank(design[retain]) < n_coef: continue
+            
+            Q,R = qr_complete(design[retain])
+            i1 = numpy.arange(n_coef)
+            i2 = numpy.arange(n_coef, len(retain))
+            Rinv = inverse(R[i1])
+            Q2 = Q[:,i2]
+            
+            z = dot(Q.T, self.data.y[row])
+            
+            # Distribution of noise in z1, given z2
+            cond_dist = (
+                self.noise_dists[row]
+                .marginal(retain)
+                .transformed(Q.T)
+                .conditional(i1, i2, z[i2])
+                )
+            
+            # Distribution of  Rinv . (z1 - noise)
+            coef_dists[row] = (
+                cond_dist
+                .shifted(-z[i1])
+                .transformed(-Rinv)
+                )
+            
+            coef[row] = coef_dists[row].mean
+        
+        return self._with(
+            design = design,
+            coef = coef,
+            coef_dists = coef_dists,
+            )
+    
+    
+    def test(self, coef=None, contrasts=None):
+        if coef:
+            assert contrasts is None
+            contrasts = numpy.zeros((len(coef), self.design.shape[1], len(coef)))
+            for i in xrange(len(coef)):
+                contrasts[coefs[i],i] = 1.0
+        
+        assert contrasts is not None
+        contrasts = as_matrix(contrasts)
+        
+        n = self.data.y.shape[0]
+        
+        contrast_dists = [ None ]*n
+        contrasts = numpy.tile(numpy.nan, (n,contrasts.shape[0]))
+        p_values = numpy.tile(numpy.nan, n)
+        
+        for row in xrange(n):
+            if not self.coef_dists[row]: continue
+            
+            contrast_dists[row] = self.coef_dists[row].transformed(contrasts.T)
+            contrasts[row] = contrast_dists[row].mean
+            p_values[row] = contrast_dists[row].p_value()
+        
+        return self._with(
+            contrasts=contrasts,
+            contrast_dists=contrast_dists,
+            p_values=p_values,
+            q_values=p_adjust.fdr(p_values),
+            )
+
+
 class Model_t_mixin(Model):
     """ This mix-in converts an Mv_normal model to an Mvt model. """
 
+    def _unpack(self, pack):
+        df = pack[0]
+        return (
+            super(Model_t_mixin,self)
+            ._unpack(pack[1:])
+            ._with(df=df)
+            )
+
+
     def _describe_noise(self, param):
-        result = super(Model_t_mixin,self)._describe_noise(param[1:])
-        result += 'prior df = %f\n' % param[0]
+        result = 'prior df = %f\n' % param.df
+        result += super(Model_t_mixin,self)._describe_noise(param)
         return result 
 
+
     def _get_dist(self, param, aux):
-        inner_dist = super(Model_t_mixin, self)._get_dist(param[1:], aux)
+        inner_dist = super(Model_t_mixin, self)._get_dist(param, aux)
         assert type(inner_dist) is Mvnormal
-        return Mvt(inner_dist.mean, inner_dist.covar, param[0])
+        return Mvt(inner_dist.mean, inner_dist.covar, param.df)
+
 
     def _configured(self):
         result = super(Model_t_mixin,self)._configured()
@@ -656,16 +464,104 @@ class Model_t_mixin(Model):
             )
 
 
-class Model_normal_standard(Model):
+class Model_factors_mixin(Model):
+    """ This mix-in adds unknown batch effect(s) to the model. """
+    
+    def __init__(self, n_factors, *etc):
+        self.n_factors = n_factors
+        super(Model_factors_mixin,self).__init__(*etc)
+
+    
+    def _unpack(self, pack):
+        m2 = self._factor_Q2.shape[1]
+        factors = [ ]
+        for i in xrange(self.n_factors):
+            factors.append(dot(self._factor_Q2, pack[:m2]))
+            pack = pack[m2:]
+        
+        return (
+            super(Model_factors_mixin,self)
+            ._unpack(pack)
+            ._with(factors=factors)
+            )
+
+
     def _describe_noise(self, param):
-        return "s.d. = %f\n" % numpy.sqrt(param[0])
+        m2 = self._factor_Q2.shape[1]
+        result = ''
+        for i in xrange(self.n_factors):
+            result += 'factor: %s\n' % repr(param.factors[i])
+        result += super(Model_factors_mixin,self)._describe_noise(param)
+        return result
+
+    
+    def _model_cost(self, param):
+        """
+        It should always be possible to reduce this cost to zero.
+        """
+        cost = super(Model_factors_mixin,self)._model_cost(param)
+        for i in xrange(self.n_factors):
+            for j in xrange(i):
+                cost = cost + dot(param.factors[i],param.factors[j]) ** 2
+        return cost
+
     
     def _get_dist(self, param, aux):
+        m, m2 = self._factor_Q2.shape
+        covar = zeros((m,m))
+        for i in xrange(self.n_factors):
+            covar = covar + outer(param.factors[i],param.factors[i])
+        dist = super(Model_factors_mixin, self)._get_dist(param, aux)
+        return dist.plus_covar(covar)
+
+    
+    def _configured(self):
+        result = super(Model_factors_mixin, self)._configured()
         m = self.data.y.shape[1]
+        #flat = self.data.y.flat
+        #flat = flat[numpy.isfinite(flat)]
+        #var = numpy.var(flat) if len(flat) > 3 else 1.0
+        #bound = numpy.sqrt(var)
+        
+        if numpy.any(self.controls):
+            design = self.control_design
+        else:
+            design = self.noise_design
+        Q,R = qr_complete(design)
+        Q2 = Q[:,design.shape[1]:]
+        m2 = Q2.shape[1]
+        
+        good = numpy.all(numpy.isfinite(self.data.y), axis=1)
+        goody = dot(Q2.T, self.data.y[good].T).T
+        u,s,v = numpy.linalg.svd(goody, full_matrices=0)
+        
+        rows = numpy.argsort(-numpy.abs(s))[:self.n_factors]
+        initial = list((v[rows] * s[rows][:,None]).flatten() / numpy.sqrt(goody.shape[0]))
+
+        return result._with(
+             _factor_Q2 = Q2,
+#             _initial=[0.0]*(m*self.n_factors) + result._initial,
+             _initial=initial + result._initial,
+             _bounds=[(None,None)]*(m2*self.n_factors) + result._bounds,
+             )
+
+
+class Model_normal_standard(Model):
+    def _unpack(self, pack):
+        return Withable()._with(variance=pack[0])
+            
+    
+    def _describe_noise(self, param):
+        return "s.d. = %f\n" % numpy.sqrt(param.variance)
+    
+    
+    def _get_dist(self, param, aux):
+        m = aux.shape[0]
         return Mvnormal(
-            numpy.zeros(m),
-            diag(param[0] * aux),
+            zeros((m,)),
+            diag(param.variance * aux),
             )
+
 
     def _configured(self):
         if 'weights' in self.data.context:
@@ -683,16 +579,68 @@ class Model_normal_standard(Model):
             _bounds = [(var*1e-6,var*2.0)],
             )
 
-
-model_normal_standard = Model_normal_standard()
-
-
 class Model_t_standard(Model_t_mixin, Model_normal_standard): pass
-model_t_standard = Model_t_standard()
+
+class Model_normal_factors_standard(
+    Model_factors_mixin, Model_normal_standard
+    ): pass
+
+class Model_t_factors_standard(
+    Model_t_mixin, Model_factors_mixin, Model_normal_standard
+    ): pass
+
+
+class Model_t_independent(Model):
+    def _describe_noise(self, param):
+        return ""
+    
+    def _get_dist(self, param, aux):
+        return Mvt(
+            zeros((aux.shape[0],)),
+            diag(aux),
+            1e-10 #Approximately zero
+            )
+
+    def _configured(self):
+        if "weights" in self.data.context:
+            _aux = 1.0 / as_matrix(self.data.context["weights"])
+        else:
+            _aux = numpy.ones(self.data.y.shape)
+        
+        return self._with(
+            _aux=_aux,
+            _initial = [],
+            _bounds = [],
+            )
+
+class Model_t_factors_independent(
+    Model_factors_mixin, Model_t_independent
+    ): pass
 
 
 
+class Model_normal_patseq(Model):
+    """ Differential tail length detection in PAT-Seq """
 
+    def _unpack(self, pack):
+        return Withable()._with(
+            read_variance = pack[0],
+            sample_variance = pack[1],
+            )
+            
+    
+    def _describe_noise(self, param):
+        pass
+    
+    
+    def _get_dist(self, param, aux):
+        m = aux.shape[0]//2
+        count = aux[:m]
+        tail = aux[m:]
+        return Mvnormal(
+            zeros((aux.shape[0],)),
+            diag( param.read_variance/count + param.sample_variance*(tail*tail) )
+            )
 
 
 if __name__ == "__main__":

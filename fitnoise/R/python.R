@@ -2,7 +2,8 @@
 pyexec <- rPython::python.exec
 
 pyload <- function() {
-    pyexec("import fitnoise, numpy")
+    pyexec("import numpy")
+    pyexec("from fitnoise import *")
 }
 
 pyset <- function(name,value) {
