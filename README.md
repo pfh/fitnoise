@@ -17,8 +17,7 @@ Installing
 
 Installing dependencies:
 
-    pip install theano
-    pip install --upgrade --no-deps git+git://github.com/Theano/Theano.git
+    pip install --upgrade git+git://github.com/Theano/Theano.git
 
     R
     install.packages("rPython")
@@ -31,7 +30,7 @@ Installing Fitnoise from source:
     R CMD INSTALL fitnoise
 
 
-Equipping a virtualenv
+Provisioning a virtualenv
 ---
 
 The following creates a virtualenv for both Python and R:
