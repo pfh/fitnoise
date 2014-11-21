@@ -28,8 +28,6 @@ fitnoise.fit <- function(
         }
         y <- y$E
     }
-
-    pyload()
     
     pyset("y", y)
     pyexec("context = {}")

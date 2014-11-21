@@ -33,60 +33,9 @@ def pull_out_strict_triangle(vec, n):
 #print pull_out_triangle(numpy.array([1,2,3,4,5,6]), 3)
 
 
-class Transform(Withable):    
-    def _unpack_transform(self, m, pack):
-        vecs = [ ]
-        for i in xrange(3):
-            vec, pack = pack[:m],pack[m:]
-            vecs.append(vec)
-        
-        a,b,c = vecs
-        
-        return (a,b,c), pack
-    
-            
-    def _apply_transform(self, param, x):
-        a,b,c = param
-        
-        #a = a - log(0.5*((x_median*(x_median+b)+c)**0.5)+0.5*x_median+0.25*b) / log(2.0)
-        
-        return a + log(0.5*((x*(x+1.0/b)+1.0/c)**0.5)+0.5*x+0.25/b) / log(2.0)
-        
-        #a = a - log(self.x_median**2+b*self.x_median+c)*(0.5/log(2.0))
-        #return a + log(x*x+b*x+c)*(0.5/log(2.0))
-        
-    
+class Transform(Withable):
     def _configured(self):
-        m = self.x.shape[1]
-        
-        x_median = numpy.median(self.x,axis=0)
-        guess = -log(x_median+1)/log(2.0)
-        print 'guess', guess
-        
-        guess_b = x_median+1
-        print 'guess_b', guess_b
-        
-        param_initial = (
-             #[0.0]*m +
-             list(guess) +  
-             #[10.0]*m +
-             list(1.0/guess_b) +
-             [12.0]*m 
-             #[1.0]*m*(self.order-2)
-             #list(numpy.mean(self.x,axis=0)**2)
-             )
-        # 1.0/12 is variance of uniform distribution [-0.5,0.5]
-        
-        param_bounds = (
-            [(None,None)]*m + 
-            [(1e-10, None)]*m+
-            [(1e-10, 12.0)]*m
-            )
-        assert len(param_initial) == len(param_bounds)
-        return self._with(
-            _param_initial = param_initial,
-            _param_bounds = param_bounds,
-            )
+        return self
     
     def fit(self, x, verbose=False):
         x = as_matrix(x)
@@ -137,7 +86,8 @@ class Transform(Withable):
         
         func = theano.function(
             [vpack_raw, vlower, vupper, vx],
-            [vcost],# vcost_grad],
+            [vcost] #, vcost_grad],
+            #on_unused_input="ignore",
             )    
         
         def score(pack):
@@ -191,15 +141,106 @@ class Transform(Withable):
             y_centered = y_centered,
             y_per_million = y_per_million,
             )
+
+
+class Transform_mixin_quadratic3(object):
+    def _unpack_transform(self, m, pack):
+        vecs = [ ]
+        for i in xrange(3):
+            vec, pack = pack[:m],pack[m:]
+            vecs.append(vec)
+        
+        a,b,c = vecs
+        
+        return (a,b,c), pack
+    
+            
+    def _apply_transform(self, param, x):
+        a,b,c = param
+        return a + log(0.5*((x*(x+b)+c)**0.5)+0.5*x+0.25*b) / log(2.0)
+        
+    
+    def _configured(self):
+        result = super(Transform_mixin_quadratic3, self)._configured()
+        m = result.x.shape[1]
+        
+        x_median = numpy.median(result.x,axis=0)
+        guess = -log(x_median+1)/log(2.0)
+        print 'guess', guess
+        
+        guess_b = x_median+1
+        print 'guess_b', guess_b
+        
+        param_initial = (
+             list(guess) +  
+             list(guess_b) +
+             [0.0]*m 
+             )
+        
+        param_bounds = (
+            [(None,None)]*m + 
+            [(1e-10, None)]*m+
+            [(0.0, None)]*m
+            )
+        assert len(param_initial) == len(param_bounds)
+        return result._with(
+            _param_initial = param_initial,
+            _param_bounds = param_bounds,
+            )
+
+
+class Transform_mixin_quadratic2(object):
+    def _unpack_transform(self, m, pack):
+        vecs = [ ]
+        for i in xrange(2):
+            vec, pack = pack[:m],pack[m:]
+            vecs.append(vec)
+        
+        a,b = vecs
+        
+        return (a,b), pack
+    
+            
+    def _apply_transform(self, param, x):
+        a,b = param
+        return a + log(0.5*((x*(x+b))**0.5)+0.5*x+0.25*b) / log(2.0)
+        
+    
+    def _configured(self):
+        result = super(Transform_mixin_quadratic2, self)._configured()
+        m = result.x.shape[1]
+        
+        x_median = numpy.median(result.x,axis=0)
+        guess = -log(x_median+1)/log(2.0)
+        #print 'guess', guess
+        
+        guess_b = x_median+1
+        #print 'guess_b', guess_b
+        
+        param_initial = (
+             list(guess) +  
+             list(guess_b)
+             )
+        
+        param_bounds = (
+            [(None,None)]*m + 
+            [(1e-10, None)]*m
+            )
+        assert len(param_initial) == len(param_bounds)
+        return result._with(
+            _param_initial = param_initial,
+            _param_bounds = param_bounds,
+            )
         
         
 class Transform_mixin_normal(object):        
     def _unpack_distribution(self, m, pack):
         #TODO: allow m to be theanic
         m = self.x.shape[1]
-        v, pack = pack[0],pack[1:]
+        #v, pack = pack[0],pack[1:]
         L, pack = pull_out_strict_triangle(pack, m)
-        covar = v*(numpy.identity(m) + L + L.T)
+        #covar = v*(numpy.identity(m) + L + L.T)
+        covar = numpy.identity(m) + L + L.T
         return distributions.Mvnormal(zeros((m,)), covar), pack
     
     def _configured(self):
@@ -207,21 +248,24 @@ class Transform_mixin_normal(object):
         
         m = result.x.shape[1]
         
-        y = result._apply_transform(
-            result._unpack_transform(m,numpy.array(result._param_initial))[0], 
-            result.x)
-        guess = numpy.var(y.flat)
-        print 'guess', guess
-
-        dist_initial = [guess]
+        #y = result._apply_transform(
+        #    result._unpack_transform(m,numpy.array(result._param_initial))[0], 
+        #    result.x)
+        #guess = numpy.var(y.flat)
+        #print 'guess', guess
+        #
+        #dist_initial = [guess]
+        dist_initial = [ ]
         for i in xrange(m):
             dist_initial.extend([0.75]*i)
-        dist_bounds = [(1e-6,None)]+[(0.0,0.9999)]*(len(dist_initial)-1)
+        #dist_bounds = [(1e-6,None)]+[(0.0,0.9999)]*(len(dist_initial)-1)
+        dist_bounds = [(0.0,0.9999)]*len(dist_initial)
         
         return result._with(
             _dist_initial = dist_initial,
             _dist_bounds = dist_bounds,
             )
+
 
 class Transform_mixin_t(Transform_mixin_normal):
     def _unpack_distribution(self, m, pack):
@@ -237,9 +281,17 @@ class Transform_mixin_t(Transform_mixin_normal):
             )
 
 
-class Transform_to_normal(Transform_mixin_normal,Transform): pass
+class Transform_to_normal(
+    Transform_mixin_normal,
+    Transform_mixin_quadratic3,
+    Transform): pass
 
-class Transform_to_t(Transform_mixin_t,Transform): pass
+class Transform_to_t(
+    Transform_mixin_t,
+    Transform_mixin_quadratic3,
+    Transform): pass
+
+
 
 
         
