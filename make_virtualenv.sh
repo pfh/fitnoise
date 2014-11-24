@@ -25,7 +25,7 @@ set -u
 #===================================================================================
 
 
-pip install --upgrade git+git://github.com/Theano/Theano.git
+pip install --upgrade -r `dirname $0`/requirements.txt
 
 Rscript - <<END
     install.packages("rPython", repos="http://cran.us.r-project.org")

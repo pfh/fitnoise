@@ -1,0 +1,11 @@
+
+# Desirable
+
+matplotlib
+rpy2
+
+# Required
+
+numpy
+scipy
+git+git://github.com/Theano/Theano.git
