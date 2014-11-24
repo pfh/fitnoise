@@ -32,14 +32,14 @@ Installing dependencies:
 
     apt-get install python-pip python-numpy python-scipy r-base
     # (or whichever package manager is appropriate to your Linux distribution)
-    # (MacOS users perhaps use brew and Anaconda Python)
+    # (MacOS users can use brew and Anaconda Python)
 
     pip install --upgrade git+git://github.com/Theano/Theano.git
 
     R
-    install.packages("rPython")
-    source("http://bioconductor.org/biocLite.R")
-    biocLite("limma")
+      install.packages("rPython")
+      source("http://bioconductor.org/biocLite.R")
+      biocLite("limma")
 
 Installing Fitnoise from source:
     
