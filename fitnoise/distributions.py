@@ -5,6 +5,9 @@ def _mahalanobis(covar, offset):
     return (offset * 
             tensordot(offset,inverse(covar),((offset.ndim-1,),(1,)))
             ).sum(axis=offset.ndim-1)
+
+def _indent(text, n):
+    return text.replace("\n", "\n"+" "*n)
             
 # Agnostic as to whether numpy or theano
 # Mvnormal(dvector('mean'), dmatrix('covar'))
@@ -15,6 +18,13 @@ class Mvnormal(object):
     def __init__(self, mean, covar):
         self.mean = as_vector(mean)
         self.covar = as_matrix(covar)
+
+
+    def __repr__(self):
+        return "Mvnormal(\n   mean=%s,\n  covar=%s\n)" % (
+            _indent(repr(self.mean),8),
+            _indent(repr(self.covar),8)
+            ) 
 
 
     # Not available for theano
@@ -103,6 +113,14 @@ class Mvt(object):
         self.mean = as_vector(mean)
         self.covar = as_matrix(covar)
         self.df = as_scalar(df)
+
+
+    def __repr__(self):
+        return "Mvt(\n     df=%s,\n   mean=%s,\n  covar=%s\n)" % (
+            repr(self.df),
+            _indent(repr(self.mean),8),
+            _indent(repr(self.covar),8)
+            ) 
 
 
     @property

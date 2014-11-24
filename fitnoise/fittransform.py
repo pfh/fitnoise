@@ -126,9 +126,8 @@ class Transform(Withable):
 
         transform, pack = result._unpack_transform(m, pack)
         distribution, pack = result._unpack_distribution(m, pack)
-        y_centered = result._apply_transform(transform, x)
-        
-        y = y_centered - transform[0].mean()
+        y = result._apply_transform(transform, x)
+        y = y - distribution.mean
         
         adjustment = log(1e6 / x.sum(axis=0)).mean()/log(2.0)
         y_per_million = y + adjustment
@@ -138,7 +137,6 @@ class Transform(Withable):
             transform = transform,
             distribution = distribution,
             y = y,
-            y_centered = y_centered,
             y_per_million = y_per_million,
             )
 
@@ -146,18 +144,16 @@ class Transform(Withable):
 class Transform_mixin_quadratic3(object):
     def _unpack_transform(self, m, pack):
         vecs = [ ]
-        for i in xrange(3):
+        for i in xrange(2):
             vec, pack = pack[:m],pack[m:]
             vecs.append(vec)
         
-        a,b,c = vecs
-        
-        return (a,b,c), pack
+        return vecs, pack
     
             
     def _apply_transform(self, param, x):
-        a,b,c = param
-        return a + log(0.5*((x*(x+b)+c)**0.5)+0.5*x+0.25*b) / log(2.0)
+        b,c = param
+        return log(0.5*((x*(x+b)+c)**0.5)+0.5*x+0.25*b) / log(2.0)
         
     
     def _configured(self):
@@ -165,20 +161,15 @@ class Transform_mixin_quadratic3(object):
         m = result.x.shape[1]
         
         x_median = numpy.median(result.x,axis=0)
-        guess = -log(x_median+1)/log(2.0)
-        print 'guess', guess
-        
         guess_b = x_median+1
         print 'guess_b', guess_b
         
         param_initial = (
-             list(guess) +  
              list(guess_b) +
              [0.0]*m 
              )
         
         param_bounds = (
-            [(None,None)]*m + 
             [(1e-10, None)]*m+
             [(0.0, None)]*m
             )
@@ -192,18 +183,16 @@ class Transform_mixin_quadratic3(object):
 class Transform_mixin_quadratic2(object):
     def _unpack_transform(self, m, pack):
         vecs = [ ]
-        for i in xrange(2):
+        for i in xrange(1):
             vec, pack = pack[:m],pack[m:]
             vecs.append(vec)
         
-        a,b = vecs
-        
-        return (a,b), pack
+        return vecs, pack
     
             
     def _apply_transform(self, param, x):
-        a,b = param
-        return a + log(0.5*((x*(x+b))**0.5)+0.5*x+0.25*b) / log(2.0)
+        [b] = param
+        return log(0.5*((x*(x+b))**0.5)+0.5*x+0.25*b) / log(2.0)
         
     
     def _configured(self):
@@ -211,19 +200,15 @@ class Transform_mixin_quadratic2(object):
         m = result.x.shape[1]
         
         x_median = numpy.median(result.x,axis=0)
-        guess = -log(x_median+1)/log(2.0)
-        #print 'guess', guess
         
         guess_b = x_median+1
-        #print 'guess_b', guess_b
+        print 'guess_b', guess_b
         
         param_initial = (
-             list(guess) +  
              list(guess_b)
              )
         
         param_bounds = (
-            [(None,None)]*m + 
             [(1e-10, None)]*m
             )
         assert len(param_initial) == len(param_bounds)
@@ -232,34 +217,101 @@ class Transform_mixin_quadratic2(object):
             _param_bounds = param_bounds,
             )
         
-        
-class Transform_mixin_normal(object):        
+class Transform_mixin_independent(object):        
     def _unpack_distribution(self, m, pack):
-        #TODO: allow m to be theanic
         m = self.x.shape[1]
+        mean, pack = pack[:m], pack[m:]
         v, pack = pack[0],pack[1:]
-        L, pack = pull_out_strict_triangle(pack, m)
-        covar = v*(numpy.identity(m) + L + L.T)
-        #covar = numpy.identity(m) + L + L.T
-        return distributions.Mvnormal(zeros((m,)), covar), pack
+        covar = v*numpy.identity(m)
+        return distributions.Mvnormal(mean, covar), pack
     
     def _configured(self):
-        result = super(Transform_mixin_normal,self)._configured()
+        result = super(Transform_mixin_independent,self)._configured()
         
         m = result.x.shape[1]
         
         y = result._apply_transform(
             result._unpack_transform(m,numpy.array(result._param_initial))[0], 
             result.x)
-        guess = numpy.var(y.flat)
-        print 'guess', guess
+        guess_mean = numpy.mean(y, axis=0)
+        guess_var = numpy.var(y.flat)
         
-        dist_initial = [guess]
-        #dist_initial = [ ]
+        print "guess_mean", guess_mean
+        print "guess_var", guess_var
+        
+        dist_initial = list(guess_mean) + [guess_var]
+        dist_bounds = [(None,None)]*m + [(1e-6,None)]
+        
+        return result._with(
+            _dist_initial = dist_initial,
+            _dist_bounds = dist_bounds,
+            )
+
+
+class Transform_mixin_uniformly_covariant(object):        
+    def _unpack_distribution(self, m, pack):
+        #TODO: allow m to be theanic
+        m = self.x.shape[1]
+        mean, pack = pack[:m], pack[m:]
+        v, pack = pack[0],pack[1:]
+        cv, pack = pack[0],pack[1:]
+        covar = v*(numpy.identity(m)*(1.0-cv) + cv)
+        #covar = numpy.identity(m) + L + L.T
+        return distributions.Mvnormal(mean, covar), pack
+    
+    def _configured(self):
+        result = super(Transform_mixin_uniformly_covariant,self)._configured()
+        
+        m = result.x.shape[1]
+        
+        y = result._apply_transform(
+            result._unpack_transform(m,numpy.array(result._param_initial))[0], 
+            result.x)
+        guess_mean = numpy.mean(y, axis=0)
+        guess_var = numpy.var(y.flat)
+        
+        print "guess_mean", guess_mean
+        print "guess_var", guess_var
+        
+        dist_initial = list(guess_mean) + [guess_var, 0.75]
+        dist_bounds = [(None,None)]*m + [(1e-6,None), (0.0,0.9999)]
+        
+        return result._with(
+            _dist_initial = dist_initial,
+            _dist_bounds = dist_bounds,
+            )
+
+        
+class Transform_mixin_allpairs_covariant(object):        
+    def _unpack_distribution(self, m, pack):
+        #TODO: allow m to be theanic
+        m = self.x.shape[1]
+        mean, pack = pack[:m], pack[m:]
+        v, pack = pack[0],pack[1:]
+        L, pack = pull_out_strict_triangle(pack, m)
+        covar = v*(numpy.identity(m) + L + L.T)
+        #covar = numpy.identity(m) + L + L.T
+        return distributions.Mvnormal(mean, covar), pack
+    
+    def _configured(self):
+        result = super(Transform_mixin_allpairs_covariant,self)._configured()
+        
+        m = result.x.shape[1]
+        
+        y = result._apply_transform(
+            result._unpack_transform(m,numpy.array(result._param_initial))[0], 
+            result.x)
+        guess_mean = numpy.mean(y, axis=0)
+        guess_var = numpy.var(y.flat)
+        
+        print "guess_mean", guess_mean
+        print "guess_var", guess_var
+        
+        dist_initial = list(guess_mean) + [guess_var]
+        dist_bounds = [(None,None)]*m + [(1e-6,None)]
         for i in xrange(m):
             dist_initial.extend([0.75]*i)
-        dist_bounds = [(1e-6,None)]+[(0.0,0.9999)]*(len(dist_initial)-1)
-        #dist_bounds = [(0.0,0.9999)]*len(dist_initial)
+            dist_bounds.extend([(0.0,0.9999)]*i)
         
         return result._with(
             _dist_initial = dist_initial,
@@ -281,31 +333,23 @@ class Transform_mixin_t(object):
             )
 
 
-class Transform_to_normal(
-    Transform_mixin_normal,
-    Transform_mixin_quadratic3,
-    Transform): pass
-
-class Transform_to_t(
-    Transform_mixin_t,
-    Transform_mixin_quadratic3,
-    Transform): pass
-
 
 
 transform_mixins = { 
     "quadratic3" : Transform_mixin_quadratic3,
-    "quadratic2" : Transform_minin_quadratic2,
+    "quadratic2" : Transform_mixin_quadratic2,
     }
 
 distribution_mixins = {
-    'normal' : Transform_mixin_normal,
+    "allpairs_covariant" : Transform_mixin_allpairs_covariant,
+    "uniformly_covariant" : Transform_mixin_uniformly_covariant,
+    "independent" : Transform_mixin_independent,
     }
 
 
 def transform(x, 
-        transform="quadratic2", 
-        distribution="normal", 
+        transform="quadratic3", 
+        distribution="uniformly_covariant", 
         robust=True, 
         verbose=False):
     class T( 
@@ -316,7 +360,7 @@ def transform(x,
     if robust:
         class T(Transform_mixin_t, T): pass
     
-    return T.fit(x, verbose=verbose)
+    return T().fit(x, verbose=verbose)
 
 
 
