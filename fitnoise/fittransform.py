@@ -116,7 +116,7 @@ class Transform(Withable):
                 )    
             a = fit.x
             if verbose: print fit.fun
-            if last is not None and last-fit.fun <= 1e-2: break
+            if last is not None and last-fit.fun <= 1e-10: break
             last = fit.fun
         
         pack = fit.x.copy()
@@ -237,10 +237,10 @@ class Transform_mixin_normal(object):
     def _unpack_distribution(self, m, pack):
         #TODO: allow m to be theanic
         m = self.x.shape[1]
-        #v, pack = pack[0],pack[1:]
+        v, pack = pack[0],pack[1:]
         L, pack = pull_out_strict_triangle(pack, m)
-        #covar = v*(numpy.identity(m) + L + L.T)
-        covar = numpy.identity(m) + L + L.T
+        covar = v*(numpy.identity(m) + L + L.T)
+        #covar = numpy.identity(m) + L + L.T
         return distributions.Mvnormal(zeros((m,)), covar), pack
     
     def _configured(self):
@@ -248,18 +248,18 @@ class Transform_mixin_normal(object):
         
         m = result.x.shape[1]
         
-        #y = result._apply_transform(
-        #    result._unpack_transform(m,numpy.array(result._param_initial))[0], 
-        #    result.x)
-        #guess = numpy.var(y.flat)
-        #print 'guess', guess
-        #
-        #dist_initial = [guess]
-        dist_initial = [ ]
+        y = result._apply_transform(
+            result._unpack_transform(m,numpy.array(result._param_initial))[0], 
+            result.x)
+        guess = numpy.var(y.flat)
+        print 'guess', guess
+        
+        dist_initial = [guess]
+        #dist_initial = [ ]
         for i in xrange(m):
             dist_initial.extend([0.75]*i)
-        #dist_bounds = [(1e-6,None)]+[(0.0,0.9999)]*(len(dist_initial)-1)
-        dist_bounds = [(0.0,0.9999)]*len(dist_initial)
+        dist_bounds = [(1e-6,None)]+[(0.0,0.9999)]*(len(dist_initial)-1)
+        #dist_bounds = [(0.0,0.9999)]*len(dist_initial)
         
         return result._with(
             _dist_initial = dist_initial,
@@ -267,7 +267,7 @@ class Transform_mixin_normal(object):
             )
 
 
-class Transform_mixin_t(Transform_mixin_normal):
+class Transform_mixin_t(object):
     def _unpack_distribution(self, m, pack):
         df, pack = pack[0], pack[1:]
         dist, pack = super(Transform_mixin_t,self)._unpack_distribution(m, pack)
@@ -291,6 +291,32 @@ class Transform_to_t(
     Transform_mixin_quadratic3,
     Transform): pass
 
+
+
+transform_mixins = { 
+    "quadratic3" : Transform_mixin_quadratic3,
+    "quadratic2" : Transform_minin_quadratic2,
+    }
+
+distribution_mixins = {
+    'normal' : Transform_mixin_normal,
+    }
+
+
+def transform(x, 
+        transform="quadratic2", 
+        distribution="normal", 
+        robust=True, 
+        verbose=False):
+    class T( 
+        distribution_mixins[distribution], 
+        transform_mixins[transform], 
+        Transform): pass
+
+    if robust:
+        class T(Transform_mixin_t, T): pass
+    
+    return T.fit(x, verbose=verbose)
 
 
 
