@@ -8,4 +8,4 @@ rpy2
 
 numpy
 scipy
-git+git://github.com/Theano/Theano.git
+git+https://github.com/Theano/Theano.git

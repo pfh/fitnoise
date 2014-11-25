@@ -107,6 +107,10 @@ def zeros(shape):
     any_t = any(is_theanic(item) for item in shape)
     return tensor.zeros(shape) if any_t else numpy.zeros(shape)
 
+def ones(shape):
+    any_t = any(is_theanic(item) for item in shape)
+    return tensor.ones(shape) if any_t else numpy.ones(shape)
+
 
 def concatenate(items):
     any_t = any(is_theanic(item) for item in items)
