@@ -14,19 +14,6 @@ from .env import *
 from . import distributions
 
 
-def info(vec):
-    n = vec.shape[0]
-    residual = vec - vec.mean()
-    residual2 = (residual*residual).sum()
-    var = residual2 / n
-    return -0.5*n*log(var)
-    #return -0.5*n(
-    #        log(2*numpy.pi)
-    #        + log(var)
-    #        + 1.0
-    #        )
-
-
 def pull_out_triangle(vec, n):
     pieces = [ ]
     for i in xrange(1,n+1):
@@ -68,12 +55,9 @@ class Transform(Withable):
             design=design,
             null=null,
             )._configured()
-
-        if verbose:
-            print 'Initial guess:', result._param_initial
     
-        initial = as_vector(result._param_initial)    
-        bounds = result._param_bounds 
+        initial = numpy.concatenate([result._param_initial,result._dist_initial])    
+        bounds = result._param_bounds + result._dist_bounds
         
         lower = numpy.array([ b[0] if b[0] is not None else -1e30 for b in bounds])
         upper = numpy.array([ b[1] if b[1] is not None else 1e30 for b in bounds])
@@ -90,7 +74,8 @@ class Transform(Withable):
         vm = vx.shape[1]
         
         vparam, vpack2 = result._unpack_transform(vm, vpack)
-        #(vpack2 should be empty)
+        vdist, vpack3 = result._unpack_distribution(vm, vpack2)
+        #(vpack3 should be empty)
         
         #_vdelta = tensor.dscalar("delta")
         #_vy = result._apply_transform(vx+_vdelta, vparam)
@@ -103,9 +88,16 @@ class Transform(Withable):
         vy = result._apply_transform(vparam, vx)
         vderiv = (result._apply_transform(vparam, vx+eps) - vy)/eps
         
+        #vtransform_cost = -log(vderiv).sum()  
         vtransform_cost = -0.5 * log(dot(null.T,vderiv.T)**2).sum()  
         
-        vdist_cost = -info(dot(null.T,vy.T).flatten())
+        #vdist_cost = -vdist.log_density(vy).sum()
+        vdist_cost = -(
+            vdist
+            .transformed(null.T)
+            .log_density(dot(null.T,vy.T).T)
+            .sum()
+            )
         
         vcost = vtransform_cost + vdist_cost + vx.shape[0]*((vpack-vpack_raw)**2).sum() 
         vcost_grad = gradient.grad(vcost, vpack)
@@ -117,8 +109,16 @@ class Transform(Withable):
             )    
         
         def score(pack):
+            #old = pack
+            #pack = pack.copy()
+            #for i,(a,b) in enumerate(bounds):
+            #    if a is not None: pack[i] = max(a,pack[i])
+            #    if b is not None: pack[i] = min(b,pack[i])
+            #err = numpy.absolute(old-pack).sum()
             result = func(pack,lower,upper,x)
-            return result[0]
+            #if verbose:
+            #    print result[0]
+            return result[0] #+ (1.0+abs(result[0]))*err
         
         a = initial
         last = None
@@ -133,14 +133,9 @@ class Transform(Withable):
                 options=dict(maxfev=10000),
                 )    
             a = fit.x
-            if verbose: 
-                print 'Score:', fit.fun
-            if last is not None and last-fit.fun <= 1e-2: break
+            if verbose: print fit.fun
+            if last is not None and last-fit.fun <= 1e-10: break
             last = fit.fun
-        
-        if verbose:
-            print 'Optimized:', list(fit.x)
-            print fit.message
         
         pack = fit.x.copy()
         for i,(a,b) in enumerate(bounds):
@@ -148,8 +143,9 @@ class Transform(Withable):
             if b is not None: pack[i] = min(b,pack[i])
 
         transform, pack = result._unpack_transform(m, pack)
+        distribution, pack = result._unpack_distribution(m, pack)
         y = result._apply_transform(transform, x)
-        y = y - y.mean(axis=0)
+        y = y - distribution.mean
         
         adjustment = log(1e6 / x.sum(axis=0)).mean()/log(2.0)
         y_per_million = y + adjustment
@@ -157,8 +153,9 @@ class Transform(Withable):
         return result._with(
             optimization_result = fit,
             transform = transform,
+            distribution = distribution,
             y = y,
-            #y_per_million = y_per_million,
+            y_per_million = y_per_million,
             )
 
 
@@ -183,6 +180,7 @@ class Transform_mixin_varstab3(object):
         
         x_median = numpy.median(result.x,axis=0)
         guess_b = x_median+1
+        print 'guess_b', guess_b
         
         param_initial = (
              list(guess_b) +
@@ -220,11 +218,12 @@ class Transform_mixin_quadratic(object):
         m = result.x.shape[1]
         
         x_median = numpy.median(result.x,axis=0)
-        guess = x_median+1
+        guess_b = x_median+1
+        print 'guess_b', guess_b
         
         param_initial = (
-             list(guess) +
-             list(guess**2) 
+             list(guess_b) +
+             list(guess_b**2) 
              )
         
         param_bounds = (
@@ -258,12 +257,13 @@ class Transform_mixin_cubic(object):
         m = result.x.shape[1]
         
         x_median = numpy.median(result.x,axis=0)
-        guess = x_median+1
+        guess_b = x_median+1
+        print 'guess_b', guess_b
         
         param_initial = (
-             list(guess) +
-             list(guess**2) +
-             list(guess**3)
+             list(guess_b) +
+             list(guess_b**2) +
+             list(guess_b**3)
              )
         
         param_bounds = (
@@ -300,10 +300,11 @@ class Transform_mixin_varstab2(object):
         
         x_median = numpy.median(result.x,axis=0)
         
-        guess = x_median+1
+        guess_b = x_median+1
+        print 'guess_b', guess_b
         
         param_initial = (
-             list(guess)
+             list(guess_b)
              )
         
         param_bounds = (
@@ -316,6 +317,122 @@ class Transform_mixin_varstab2(object):
             )
 
 
+class Transform_mixin_independent(object):        
+    def _unpack_distribution(self, m, pack):
+        m = self.x.shape[1]
+        mean, pack = pack[:m], pack[m:]
+        v, pack = pack[0],pack[1:]
+        covar = v*numpy.identity(m)
+        return distributions.Mvnormal(mean, covar), pack
+    
+    def _configured(self):
+        result = super(Transform_mixin_independent,self)._configured()
+        
+        m = result.x.shape[1]
+        
+        y = result._apply_transform(
+            result._unpack_transform(m,numpy.array(result._param_initial))[0], 
+            result.x)
+        guess_mean = numpy.mean(y, axis=0)
+        guess_var = numpy.var(y.flat)
+        
+        print "guess_mean", guess_mean
+        print "guess_var", guess_var
+        
+        dist_initial = list(guess_mean) + [guess_var]
+        dist_bounds = [(None,None)]*m + [(1e-6,None)]
+        
+        return result._with(
+            _dist_initial = dist_initial,
+            _dist_bounds = dist_bounds,
+            )
+
+
+class Transform_mixin_uniformly_covariant(object):        
+    def _unpack_distribution(self, m, pack):
+        #TODO: allow m to be theanic
+        m = self.x.shape[1]
+        mean, pack = pack[:m], pack[m:]
+        v, pack = pack[0],pack[1:]
+        cv, pack = pack[0],pack[1:]
+        covar = v*(numpy.identity(m)*(1.0-cv) + cv)
+        #covar = numpy.identity(m) + L + L.T
+        return distributions.Mvnormal(mean, covar), pack
+    
+    def _configured(self):
+        result = super(Transform_mixin_uniformly_covariant,self)._configured()
+        
+        m = result.x.shape[1]
+        
+        y = result._apply_transform(
+            result._unpack_transform(m,numpy.array(result._param_initial))[0], 
+            result.x)
+        guess_mean = numpy.mean(y, axis=0)
+        guess_var = numpy.var(y.flat)
+        
+        print "guess_mean", guess_mean
+        print "guess_var", guess_var
+        
+        dist_initial = list(guess_mean) + [guess_var, 0.75]
+        dist_bounds = [(None,None)]*m + [(1e-6,None), (0.0,0.9999)]
+        
+        return result._with(
+            _dist_initial = dist_initial,
+            _dist_bounds = dist_bounds,
+            )
+
+        
+class Transform_mixin_allpairs_covariant(object):        
+    def _unpack_distribution(self, m, pack):
+        #TODO: allow m to be theanic
+        m = self.x.shape[1]
+        mean, pack = pack[:m], pack[m:]
+        v, pack = pack[0],pack[1:]
+        L, pack = pull_out_strict_triangle(pack, m)
+        covar = v*(numpy.identity(m) + L + L.T)
+        #covar = numpy.identity(m) + L + L.T
+        return distributions.Mvnormal(mean, covar), pack
+    
+    def _configured(self):
+        result = super(Transform_mixin_allpairs_covariant,self)._configured()
+        
+        m = result.x.shape[1]
+        
+        y = result._apply_transform(
+            result._unpack_transform(m,numpy.array(result._param_initial))[0], 
+            result.x)
+        guess_mean = numpy.mean(y, axis=0)
+        guess_var = numpy.var(y.flat)
+        
+        print "guess_mean", guess_mean
+        print "guess_var", guess_var
+        
+        dist_initial = list(guess_mean) + [guess_var]
+        dist_bounds = [(None,None)]*m + [(1e-6,None)]
+        for i in xrange(m):
+            dist_initial.extend([0.75]*i)
+            dist_bounds.extend([(0.0,0.9999)]*i)
+        
+        return result._with(
+            _dist_initial = dist_initial,
+            _dist_bounds = dist_bounds,
+            )
+
+
+class Transform_mixin_t(object):
+    def _unpack_distribution(self, m, pack):
+        df, pack = pack[0], pack[1:]
+        dist, pack = super(Transform_mixin_t,self)._unpack_distribution(m, pack)
+        return distributions.Mvt(dist.mean, dist.covar, df), pack
+
+    def _configured(self):
+        result = super(Transform_mixin_t,self)._configured()
+        return result._with(
+            _dist_initial = [ 5.0 ] + result._dist_initial,
+            _dist_bounds = [(1.0,1000.0)] + result._dist_bounds,
+            )
+
+
 
 
 transform_mixins = { 
@@ -325,15 +442,27 @@ transform_mixins = {
     "varstab2" : Transform_mixin_varstab2,
     }
 
+distribution_mixins = {
+    "allpairs_covariant" : Transform_mixin_allpairs_covariant,
+    "uniformly_covariant" : Transform_mixin_uniformly_covariant,
+    "independent" : Transform_mixin_independent,
+    }
+
 
 def transform(x, 
         design=None,
-        transform="varstab2", 
+        transform="quadratic", 
+        distribution="uniformly_covariant", 
+        robust=True, 
         verbose=False):
     class T( 
+        distribution_mixins[distribution], 
         transform_mixins[transform], 
         Transform): pass
 
+    if robust:
+        class T(Transform_mixin_t, T): pass
+    
     return T().fit(x, design=design, verbose=verbose)
 
 

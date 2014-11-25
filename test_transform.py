@@ -4,7 +4,7 @@ import fitnoise
 import numpy
 import pylab
 
-n = 1000
+n = 10000
 m = 2
 df = 10.0
 dist = fitnoise.Mvt(
@@ -31,7 +31,7 @@ for t in [
       ]:
     fit = fitnoise.transform(x, 
              transform=t, verbose=True)
-    print fit.optimization_result
+    #print fit.optimization_result
     
     #print 'df',fit.distribution.df
     print
