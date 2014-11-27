@@ -47,6 +47,13 @@ def pull_out_strict_triangle(vec, n):
 
 
 class Transform(Withable):
+    def __repr__(self):
+        result = self.__class__.__name__
+        if hasattr(self, "y"):
+            result += "\n"+self.optimization_result.message
+            result += "\nTransform parameters: "+repr(self.transform)
+        return result
+    
     def _configured(self):
         return self
     
@@ -162,45 +169,8 @@ class Transform(Withable):
             )
 
 
-class Transform_mixin_varstab3(object):
-    def _unpack_transform(self, m, pack):
-        vecs = [ ]
-        for i in xrange(2):
-            vec, pack = pack[:m],pack[m:]
-            vecs.append(vec)
-        
-        return vecs, pack
-    
-            
-    def _apply_transform(self, param, x):
-        b,c = param
-        return log(0.5*((x*(x+b)+c)**0.5)+0.5*x+0.25*b) / log(2.0)
-        
-    
-    def _configured(self):
-        result = super(Transform_mixin_varstab3, self)._configured()
-        m = result.x.shape[1]
-        
-        x_median = numpy.median(result.x,axis=0)
-        guess_b = x_median+1
-        
-        param_initial = (
-             list(guess_b) +
-             [0.0]*m 
-             )
-        
-        param_bounds = (
-            [(1e-10, None)]*m+
-            [(0.0, None)]*m
-            )
-        assert len(param_initial) == len(param_bounds)
-        return result._with(
-            _param_initial = param_initial,
-            _param_bounds = param_bounds,
-            )
 
-
-class Transform_mixin_quadratic(object):
+class Transform_quadratic(Transform):
     def _unpack_transform(self, m, pack):
         vecs = [ ]
         for i in xrange(2):
@@ -216,7 +186,7 @@ class Transform_mixin_quadratic(object):
         
     
     def _configured(self):
-        result = super(Transform_mixin_quadratic, self)._configured()
+        result = super(Transform_quadratic, self)._configured()
         m = result.x.shape[1]
         
         x_median = numpy.median(result.x,axis=0)
@@ -238,7 +208,7 @@ class Transform_mixin_quadratic(object):
             )
 
 
-class Transform_mixin_cubic(object):
+class Transform_cubic(Transform):
     def _unpack_transform(self, m, pack):
         vecs = [ ]
         for i in xrange(3):
@@ -254,7 +224,7 @@ class Transform_mixin_cubic(object):
         
     
     def _configured(self):
-        result = super(Transform_mixin_cubic, self)._configured()
+        result = super(Transform_cubic, self)._configured()
         m = result.x.shape[1]
         
         x_median = numpy.median(result.x,axis=0)
@@ -278,8 +248,45 @@ class Transform_mixin_cubic(object):
             )
 
 
+class Transform_varstab3(Transform):
+    def _unpack_transform(self, m, pack):
+        vecs = [ ]
+        for i in xrange(2):
+            vec, pack = pack[:m],pack[m:]
+            vecs.append(vec)
+        
+        return vecs, pack
+    
+            
+    def _apply_transform(self, param, x):
+        b,c = param
+        return log(0.5*((x*(x+b)+c)**0.5)+0.5*x+0.25*b) / log(2.0)
+        
+    
+    def _configured(self):
+        result = super(Transform_varstab3, self)._configured()
+        m = result.x.shape[1]
+        
+        x_median = numpy.median(result.x,axis=0)
+        guess_b = x_median+1
+        
+        param_initial = (
+             list(guess_b) +
+             [0.0]*m 
+             )
+        
+        param_bounds = (
+            [(1e-10, None)]*m+
+            [(0.0, None)]*m
+            )
+        assert len(param_initial) == len(param_bounds)
+        return result._with(
+            _param_initial = param_initial,
+            _param_bounds = param_bounds,
+            )
 
-class Transform_mixin_varstab2(object):
+
+class Transform_varstab2(Transform):
     def _unpack_transform(self, m, pack):
         vecs = [ ]
         for i in xrange(1):
@@ -295,7 +302,7 @@ class Transform_mixin_varstab2(object):
         
     
     def _configured(self):
-        result = super(Transform_mixin_varstab2, self)._configured()
+        result = super(Transform_varstab2, self)._configured()
         m = result.x.shape[1]
         
         x_median = numpy.median(result.x,axis=0)
@@ -318,11 +325,11 @@ class Transform_mixin_varstab2(object):
 
 
 
-transform_mixins = { 
-    "quadratic" : Transform_mixin_quadratic,
-    "cubic" : Transform_mixin_cubic,
-    "varstab3" : Transform_mixin_varstab3,
-    "varstab2" : Transform_mixin_varstab2,
+TRANSFORMS = { 
+    "quadratic" : Transform_quadratic,
+    "cubic"     : Transform_cubic,
+    "varstab3"  : Transform_varstab3,
+    "varstab2"  : Transform_varstab2,
     }
 
 
@@ -330,11 +337,7 @@ def transform(x,
         design=None,
         transform="varstab2", 
         verbose=False):
-    class T( 
-        transform_mixins[transform], 
-        Transform): pass
-
-    return T().fit(x, design=design, verbose=verbose)
+    return TRANSFORMS[transform]().fit(x, design=design, verbose=verbose)
 
 
 

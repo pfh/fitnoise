@@ -37,7 +37,7 @@ Installing dependencies:
     pip install --upgrade git+git://github.com/Theano/Theano.git
 
     R
-      install.packages("rPython")
+      install.packages(c("rPython", "jsonlite"))
       source("http://bioconductor.org/biocLite.R")
       biocLite("limma")
 

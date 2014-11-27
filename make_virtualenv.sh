@@ -28,7 +28,7 @@ set -u
 pip install --upgrade -r `dirname $0`/requirements.txt
 
 Rscript - <<END
-    install.packages("rPython", repos="http://cran.us.r-project.org")
+    install.packages(c("rPython","jsonlite"), repos="http://cran.us.r-project.org")
     source("http://bioconductor.org/biocLite.R")
     biocLite("limma")
 END

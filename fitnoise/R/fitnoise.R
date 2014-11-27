@@ -9,10 +9,17 @@ ensure.columns.named <- function(mat, prefix) {
     mat
 }
 
+mimic.matrix.names <- function(x, template) {
+    x <- as.matrix(x)
+    rownames(x) <- rownames(template)
+    colnames(x) <- colnames(template)
+    x
+}
+
 
 fitnoise.fit <- function(
         y, design, 
-        model="Model_t_standard()",
+        model="fitnoise.Model_t_standard()",
         noise.design=NULL, 
         control.design=NULL, controls=NULL, 
         weights=NULL, counts=NULL) {
@@ -54,4 +61,37 @@ fitnoise.fit <- function(
     result = list(
         )
 }
+
+
+fitnoise.transform <- function(
+        x, design=NULL, transform="varstab2") {
+    
+    pyset("x",x)
+    pyset("design",design)
+    pyset_scalar("transform",transform)
+    
+    pyexec("print x; print design; print transform")
+    
+    pyexec("fit = fitnoise.transform(
+        x=x,
+        design=design,
+        )")
+
+    y <- pyget("fit.y")
+    y <- mimic.matrix.names(y, x)
+    
+    fit <- pyget("repr(fit)")
+
+    pyexec("del x, design, transform, fit")
+
+    list(
+        x = x,
+        design = design,
+        fit = fit,
+        y = y
+        )
+}
+
+
+
 
