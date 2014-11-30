@@ -1,5 +1,5 @@
 
-ensure.columns.named <- function(mat, prefix) {
+ensure.matrix.columns.named <- function(mat, prefix) {
     if (is.null(colnames(mat))) {
         col.names <- character()
         for(i in seq_len(ncol(mat)))
@@ -64,25 +64,27 @@ fitnoise.fit <- function(
 
 
 fitnoise.transform <- function(
-        x, design=NULL, transform="varstab2") {
+        x, design=NULL, transform="varstab2",
+        verbose=FALSE) {
     
     pyset("x",x)
     pyset("design",design)
     pyset_scalar("transform",transform)
-    
-    pyexec("print x; print design; print transform")
+    pyset_scalar("verbose",verbose)
     
     pyexec("fit = fitnoise.transform(
         x=x,
         design=design,
+        transform=transform,
+        verbose=verbose,
         )")
 
-    y <- pyget("fit.y")
+    y <- pyget("fit.y.tolist()")
     y <- mimic.matrix.names(y, x)
     
     fit <- pyget("repr(fit)")
 
-    pyexec("del x, design, transform, fit")
+    pyexec("del x, design, transform, verbose, fit")
 
     list(
         x = x,

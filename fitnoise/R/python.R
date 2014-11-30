@@ -55,10 +55,12 @@ pyset_scalar <- function(name,value) {
 
 
 pyget <- function(name) {
-    pyexec(sprintf("_val = fitnoise.R_literal(%s)",name))
+#    pyexec(sprintf("_val = fitnoise.R_literal(%s)",name))
+    pyexec(sprintf("_val = json.dumps(%s)",name))
     text <- rPython::python.get("_val")
     pyexec("del _val")
-    eval(parse(text=text))
+#    eval(parse(text=text))
+    jsonlite::fromJSON(text)
 }
 
 

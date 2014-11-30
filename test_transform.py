@@ -17,17 +17,20 @@ data = numpy.array([ dist.random() for i in xrange(n) ])
 
 data = data*0.1 + numpy.random.random(size=n)[:,None] * 20.0
 
-data = data + ([-5.0,5.0]+[0.0]*(m-2))
+data = data -[10.0,10.0] #+ ([-5.0,5.0]+[0.0]*(m-2))
 
 x = 2.0 ** data
 x = numpy.random.poisson(x)
 #print x
 
 for t in [ 
-      'varstab2', 
-      'varstab3',
-      #'quadratic',
-      #"cubic" 
+      #'pow',
+      #'arcsinh',
+      'linear',
+      'quadratic',
+      "cubic" 
+      #'varstab2', 
+      #'varstab3',
       ]:
     fit = fitnoise.transform(x, 
              transform=t, verbose=True)
