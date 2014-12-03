@@ -15,36 +15,29 @@ dist = fitnoise.Mvt(
 
 data = numpy.array([ dist.random() for i in xrange(n) ])
 
-data = data*0.1 + numpy.random.random(size=n)[:,None] * 20.0
+data = data*2.0 + numpy.random.random(size=n)[:,None] * 20.0
 
-data = data -[10.0,10.0] #+ ([-5.0,5.0]+[0.0]*(m-2))
+data = data #-[5.0,10.0] #+ ([-5.0,5.0]+[0.0]*(m-2))
 
 x = 2.0 ** data
 x = numpy.random.poisson(x)
-#print x
 
-for t in [ 
-      #'pow',
-      #'arcsinh',
-      'linear',
-      'quadratic',
-      "cubic" 
-      #'varstab2', 
-      #'varstab3',
-      ]:
+for o in [ 2 ]:
     fit = fitnoise.transform(x, 
-             transform=t, verbose=True)
-    #print fit.optimization_result
-    
-    #print 'df',fit.distribution.df
-    print
-    print fit.transform
-    #print fit.x_median
-    
-    #print fit.transform[1] / numpy.sqrt(numpy.diag(fit.distribution.covar))
+             order=o, verbose=True)
     
     y = fit.y
-    pylab.plot(0.5*(y[:,0]+y[:,1]), y[:,1]-y[:,0],'.')
+    #pylab.plot(0.5*(y[:,0]+y[:,1]), y[:,1]-y[:,0],'.')
+
+
+xx = numpy.arange(100)
+xxt = numpy.tile(xx[:,None], (1,m))
+pylab.plot(xx, numpy.sqrt(xx))
+pylab.plot(xx, numpy.log(xx)/numpy.log(2.0))
+
+yy = fit._apply_transform(fit.transform,xxt)
+for i in xrange(m):
+    pylab.plot(xx,yy[:,i])
 
 pylab.show()
 

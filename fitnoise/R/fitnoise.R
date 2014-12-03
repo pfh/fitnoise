@@ -64,18 +64,18 @@ fitnoise.fit <- function(
 
 
 fitnoise.transform <- function(
-        x, design=NULL, transform="varstab2",
+        x, design=NULL, order=2,
         verbose=FALSE) {
     
     pyset("x",x)
     pyset("design",design)
-    pyset_scalar("transform",transform)
+    pyset_scalar("order",order)
     pyset_scalar("verbose",verbose)
     
     pyexec("fit = fitnoise.transform(
         x=x,
         design=design,
-        transform=transform,
+        order=order,
         verbose=verbose,
         )")
 
@@ -84,7 +84,7 @@ fitnoise.transform <- function(
     
     fit <- pyget("repr(fit)")
 
-    pyexec("del x, design, transform, verbose, fit")
+    pyexec("del x, design, order, verbose, fit")
 
     list(
         x = x,
