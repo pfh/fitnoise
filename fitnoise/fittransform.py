@@ -2,6 +2,18 @@
 
 Optimal moderated log transformation.
 
+F test
+
+H0
+term for each column
+
+H1
+term for each column
+term for each gene
+(except one column or one gene)
+
+Except we'll use REML for H1, comes out the same.
+
 """
 
 from __future__ import division
@@ -10,33 +22,33 @@ from .env import *
 from . import distributions
 
 
-
-def info(vec):
-    n = vec.shape[0]
-    residual = vec - vec.mean()
-    residual2 = (residual*residual).sum()
-    var = residual2 / n
-    return -0.5*n*log(var)
-
-def residual_info(residual):
-    n = residual.shape[0]
-    residual2 = (residual*residual).sum()
-    var = residual2 / n
-    return -0.5*n*log(var)
-
-def vec_info(mat):
-    #TODO: optimize
-    n = mat.shape[0]
-    residual = ( mat - mat.mean(axis=0)[None,:] )
-    covar = (residual[:,:,None]*residual[:,None,:]).sum(axis=0) / n
-    return -0.5*n*log(det(covar))
-
-def spheroid_info(mat):
-    residual = ( mat - mat.mean(axis=0)[None,:] ).flatten()
-    residual2 = (residual*residual).sum()
-    n = residual.shape[0]
-    var = residual2 / n
-    return -0.5*n*log(var)
+#
+#def info(vec):
+#    n = vec.shape[0]
+#    residual = vec - vec.mean()
+#    residual2 = (residual*residual).sum()
+#    var = residual2 / n
+#    return -0.5*n*log(var)
+#
+#def residual_info(residual):
+#    n = residual.shape[0]
+#    residual2 = (residual*residual).sum()
+#    var = residual2 / n
+#    return -0.5*n*log(var)
+#
+#def vec_info(mat):
+#    #TODO: optimize
+#    n = mat.shape[0]
+#    residual = ( mat - mat.mean(axis=0)[None,:] )
+#    covar = (residual[:,:,None]*residual[:,None,:]).sum(axis=0) / n
+#    return -0.5*n*log(det(covar))
+#
+#def spheroid_info(mat):
+#    residual = ( mat - mat.mean(axis=0)[None,:] ).flatten()
+#    residual2 = (residual*residual).sum()
+#    n = residual.shape[0]
+#    var = residual2 / n
+#    return -0.5*n*log(var)
 
 
 class Transform(Withable):
@@ -61,8 +73,7 @@ class Transform(Withable):
         q,r = qr_complete(design)
         q_design = q[:,:design.shape[1]]
         q_null = q[:,design.shape[1]:]
-        
-    
+            
         result = self._with(
             x=x,
             design=design,
@@ -85,16 +96,30 @@ class Transform(Withable):
         vparam = result._unpack_transform(vm, vpack)
         
         vy = result._apply_transform(vparam, vx)
-
-        # This is just a fancy way of saying
-        # minimize the correlation?
-        # maximize the null component
-        vcost = (
-            spheroid_info(vy) #*(vq_null.shape[1]/vq_null.shape[0])
-            #- vec_info(vy)
-            - spheroid_info(dot(vy,vq_design)) #*(vq_null.shape[1]/vq_design.shape[1])
-            - spheroid_info(dot(vy,vq_null))
+        
+        vcentered = vy - vy.mean(axis=0)[None,:]
+        vresidual = dot(vcentered,vq_null)
+        
+        vvar_h0 = (
+            (vcentered*vcentered).flatten().sum() 
+            #/ (vy.shape[0]*vy.shape[1] - vy.shape[1])
             )
+        vvar_h1 = (
+            (vresidual*vresidual).flatten().sum() 
+            #/ (vy.shape[0]*vresidual.shape[1] - vresidual.shape[1])
+            )
+
+        vcost = log(vvar_h1) - log(vvar_h0)
+
+        ## This is just a fancy way of saying
+        ## minimize the correlation?
+        ## maximize the null component
+        #vcost = (
+        #    spheroid_info(vy) #*(vq_null.shape[1]/vq_null.shape[0])
+        #    #- vec_info(vy)
+        #    - spheroid_info(dot(vy,vq_design)) #*(vq_null.shape[1]/vq_design.shape[1])
+        #    - spheroid_info(dot(vy,vq_null))
+        #    )
             
             
         

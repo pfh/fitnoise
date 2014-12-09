@@ -17,7 +17,7 @@ data = numpy.array([ dist.random() for i in xrange(n) ])
 
 data = data*2.0 + numpy.random.random(size=n)[:,None] * 20.0
 
-data = data -[5.0,10.0] #+ ([-5.0,5.0]+[0.0]*(m-2))
+data = data #-[5.0,0.0] #+ ([-5.0,5.0]+[0.0]*(m-2))
 
 x = 2.0 ** data
 x = numpy.random.poisson(x)
@@ -28,13 +28,14 @@ for o in [ 2 ]:
              order=o, verbose=True)
     
     y = fit.y
-    pylab.plot(0.5*(y[:,0]+y[:,1]), y[:,1]-y[:,0],'.')
+    pylab.plot(0.5*(y[:,0]+y[:,1]), y[:,1]-y[:,0],',')
 
 pylab.subplot(212)
 xx = numpy.arange(20)
 xxt = numpy.tile(xx[:,None], (1,m))
 #pylab.plot(xx, numpy.sqrt(xx))
-#pylab.plot(xx, numpy.log(xx)/numpy.log(2.0))
+pylab.plot(xx, numpy.log(xx)/numpy.log(2.0))
+pylab.plot(xx, numpy.log(xx+0.5)/numpy.log(2.0))
 
 yy = fit._apply_transform(fit.transform,xxt)
 for i in xrange(m):
