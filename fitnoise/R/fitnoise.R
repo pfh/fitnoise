@@ -36,30 +36,73 @@ fitnoise.fit <- function(
         y <- y$E
     }
     
+    if (is.null(noise.design))
+        noise.design <- design
+    
+    pyexec("import fitnoise")
+    
     pyset("y", y)
     pyexec("context = {}")
     if (!is.null(weights))
         pyset("context['weights']", weights)
     if (!is.null(counts))
         pyset("context['counts']", counts)
-    pyexec("dataset = Dataset(y, context)")
+    pyexec("dataset = fitnoise.Dataset(y, context)")
     
     pyset("design", design)
     pyset("noise_design", noise.design)
     pyset("control_design", control.design)
     pyset("controls", controls)
-    
+        
     pyexec(sprintf("fit = %s", model))
-    pyexec("fit = fit.fit(
-        dataset,
-        design=design,
-        noise_design=noise_design,
-        control_design=control_design,
-        controls=controls,
+    pyexec("fit = (
+        fit
+        .fit_noise(
+            dataset,
+            design=noise_design,
+            control_design=control_design,
+            controls=controls,
+            )
+        .fit_coef(design)
         )")
     
-    result = list(
+    list(
+        pyfit = pyref("fit"),
+        description = pyget("repr(fit)")   
         )
+}
+
+
+
+fitnoise.test <- function(
+        fit, coef=NULL, contrasts=NULL
+        ) {
+    
+    if (!is.null(coef))
+        coef <- coef - 1  #Python is zero based
+    
+    if (!is.null(contrasts))
+        contrasts <- as.matrix(contrasts)
+    
+    pyset("fit", fit$pyfit)
+    pyset("coef", coef)
+    pyset("contrasts", contrasts)
+    
+    pyexec("print repr(fit.design)")
+    
+    pyexec("fit = fit.test(coef=coef,contrasts=contrasts)")
+    
+    fit$pyfit <- pyref("fit")
+    fit$description <- pyget("repr(fit)")  
+    
+    fit$contrasts <- pyget("fit.contrasts.tolist()")
+    if (!is.null(colnames(contrasts)))
+        colnames(fit$contrasts) <- colnames(contrasts)
+    
+    fit$p.values <- pyget("fit.p_values.tolist()")
+    fit$q.values <- pyget("fit.q_values.tolist()")
+    
+    fit
 }
 
 

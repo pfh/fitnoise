@@ -28,7 +28,7 @@ for o in [ 2 ]:
              order=o, verbose=True)
     
     y = fit.y
-    pylab.plot(0.5*(y[:,0]+y[:,1]), y[:,1]-y[:,0],',')
+    pylab.plot(0.5*(y[:,0]+y[:,1]), y[:,1]-y[:,0],'.')
 
 pylab.subplot(212)
 xx = numpy.arange(20)

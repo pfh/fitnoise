@@ -2,6 +2,10 @@
 
 # Oh. God.
 
+.fitnoise.env <- new.env()
+.fitnoise.env$loaded <- FALSE
+.fitnoise.env$counter <- 0
+
 pyquote <- function(text) {
     text <- gsub("\\\\","\\\\\\\\",text)
     text <- gsub("\n","\\\\n",text)
@@ -11,15 +15,20 @@ pyquote <- function(text) {
 
 
 pyexec <- function(text) {
+    text = sprintf(
+        "try: %s\nexcept:\n  traceback.print_exc()\n  raise",
+        text)
+      
+
     pyload()
     rPython::python.exec(text)
 }
 
 
 pyload <- function() {
-    if (!exists(".fitnoise.python.loaded", envir=.GlobalEnv)) {
-        assign(".fitnoise.python.loaded", TRUE, envir=.GlobalEnv)
-        pyexec("import numpy, json, urllib, fitnoise")
+    if (!.fitnoise.env$loaded) {
+        .fitnoise.env$loaded <- TRUE
+        pyexec("import numpy, json, urllib, traceback")
     }
 }
 
@@ -32,6 +41,11 @@ pyset_none <- function(name) {
 pyset <- function(name,value) {
     if (is.null(value)) {
         pyset_none(name)
+        return()
+    }
+    
+    if (is.environment(value)) {
+        pyexec(sprintf("%s = %s", name, value$name))
         return()
     }
     
@@ -63,5 +77,21 @@ pyget <- function(name) {
     jsonlite::fromJSON(text)
 }
 
+
+pyref <- function(text) {
+    env <- new.env()
+    
+    .fitnoise.env$counter <- .fitnoise.env$counter + 1
+    env$name <- sprintf("_pyref_%d", .fitnoise.env$counter)
+    
+    pyexec(sprintf("%s = (%s)", env$name, text))
+    
+    reg.finalizer(env, function(env) {
+       cat("Freeing",env$name,"\n")
+       pyexec(sprintf("del %s", env$name)) 
+    })
+    
+    env
+}
 
 

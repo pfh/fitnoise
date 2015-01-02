@@ -400,13 +400,12 @@ class Model(Withable):
             coef_dists = coef_dists,
             )
     
-    
     def test(self, coef=None, contrasts=None):
         if coef:
             assert contrasts is None
-            contrasts = numpy.zeros((len(coef), self.design.shape[1], len(coef)))
+            contrasts = numpy.zeros((self.design.shape[1], len(coef)))
             for i in xrange(len(coef)):
-                contrasts[coefs[i],i] = 1.0
+                contrasts[coef[i],i] = 1.0
         
         assert contrasts is not None
         contrasts = as_matrix(contrasts)
@@ -414,18 +413,18 @@ class Model(Withable):
         n = self.data.y.shape[0]
         
         contrast_dists = [ None ]*n
-        contrasts = numpy.tile(numpy.nan, (n,contrasts.shape[0]))
+        contrasted = numpy.tile(numpy.nan, (n,contrasts.shape[1]))
         p_values = numpy.tile(numpy.nan, n)
         
         for row in xrange(n):
             if not self.coef_dists[row]: continue
             
             contrast_dists[row] = self.coef_dists[row].transformed(contrasts.T)
-            contrasts[row] = contrast_dists[row].mean
-            p_values[row] = contrast_dists[row].p_value()
+            contrasted[row] = contrast_dists[row].mean
+            p_values[row] = contrast_dists[row].p_value(numpy.zeros(contrasts.shape[1]))
         
         return self._with(
-            contrasts=contrasts,
+            contrasts=contrasted,
             contrast_dists=contrast_dists,
             p_values=p_values,
             q_values=p_adjust.fdr(p_values),

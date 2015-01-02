@@ -11,7 +11,7 @@ set -u
 
 cd `dirname $0`
 
-python setup.py install     
+python setup.py install
 
 R CMD INSTALL fitnoise
 
