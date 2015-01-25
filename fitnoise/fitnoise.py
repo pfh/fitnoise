@@ -253,6 +253,11 @@ def as_dataset(dataset):
     
 
 class Model(Withable):
+    """
+    
+        score = mean residual log2 density
+    """
+    
     def __init__(self):
         pass
 
@@ -260,6 +265,7 @@ class Model(Withable):
         if hasattr(self,'param'):
             result = self._describe_noise(self.param)
             result += 'noise combined p-value = %f\n' % self.noise_combined_p_value
+            result += 'noise fit score = %f bits\n' % self.score
         else:
             result = '<%s>\n' % self.__class__.__name__
         return result
@@ -298,7 +304,7 @@ class Model(Withable):
         
         result = result._configured()
         
-        designs = [ (noise_design if item else control_design) for item in controls ]
+        designs = [ (control_design if item else design) for item in controls ]
 
         fit, row_tQ2_z2 = _fit_noise(
             y=result.data.y, 
@@ -336,9 +342,12 @@ class Model(Withable):
         else:
             noise_combined_p_value = min(1,numpy.minimum.reduce(good_p)*len(good_p))
         
+        n_residuals = sum(m - item.shape[1] for item in designs)
+        
         return result._with(
             optimization_result = fit,
             param = param,
+            score = fit.fun / n_residuals,
             noise_dists = noise_dists,
             noise_p_values = noise_p_values,
             noise_combined_p_value = noise_combined_p_value,
@@ -489,7 +498,7 @@ class Model_factors_mixin(Model):
         m2 = self._factor_Q2.shape[1]
         result = ''
         for i in xrange(self.n_factors):
-            result += 'factor: %s\n' % repr(param.factors[i])
+            result += 'factor: %s\n' % ', '.join('%f'%item for item in param.factors[i])
         result += super(Model_factors_mixin,self)._describe_noise(param)
         return result
 
@@ -545,7 +554,7 @@ class Model_factors_mixin(Model):
              )
 
 
-class Model_normal_standard(Model):
+class Model_normal(Model):
     def _unpack(self, pack):
         return Withable()._with(variance=pack[0])
             
@@ -578,14 +587,14 @@ class Model_normal_standard(Model):
             _bounds = [(var*1e-6,var*2.0)],
             )
 
-class Model_t_standard(Model_t_mixin, Model_normal_standard): pass
+class Model_t(Model_t_mixin, Model_normal): pass
 
-class Model_normal_factors_standard(
-    Model_factors_mixin, Model_normal_standard
+class Model_normal_factors(
+    Model_factors_mixin, Model_normal
     ): pass
 
-class Model_t_factors_standard(
-    Model_t_mixin, Model_factors_mixin, Model_normal_standard
+class Model_t_factors(
+    Model_t_mixin, Model_factors_mixin, Model_normal
     ): pass
 
 
@@ -612,7 +621,7 @@ class Model_t_independent(Model):
             _bounds = [],
             )
 
-class Model_t_factors_independent(
+class Model_t_independent_factors(
     Model_factors_mixin, Model_t_independent
     ): pass
 
@@ -626,11 +635,12 @@ class Model_normal_patseq(Model):
             read_variance = pack[0],
             sample_variance = pack[1],
             )
-            
     
     def _describe_noise(self, param):
-        pass
-    
+        return "variance = %f^2 / reads + (%f * tail)^2" % (
+            numpy.sqrt(param.read_variance), 
+            numpy.sqrt(param.sample_variance)
+            )
     
     def _get_dist(self, param, aux):
         m = aux.shape[0]//2
@@ -640,6 +650,38 @@ class Model_normal_patseq(Model):
             zeros((aux.shape[0],)),
             diag( param.read_variance/count + param.sample_variance*(tail*tail) )
             )
+
+class Model_t_patseq(Model_t_mixin, Model_normal_patseq): pass
+
+
+
+
+
+class Model_normal_patseq_v2(Model):
+    """ Differential tail length detection in PAT-Seq, slight variation on model """
+
+    def _unpack(self, pack):
+        return Withable()._with(
+            read_variance = pack[0],
+            sample_variance = pack[1],
+            )
+    
+    def _describe_noise(self, param):
+        return "variance = (%f^2 / reads + %f^2) * tail^2" % (
+            numpy.sqrt(param.read_variance), 
+            numpy.sqrt(param.sample_variance)
+            )
+    
+    def _get_dist(self, param, aux):
+        m = aux.shape[0]//2
+        count = aux[:m]
+        tail = aux[m:]
+        return Mvnormal(
+            zeros((aux.shape[0],)),
+            diag( (param.read_variance/count + param.sample_variance)*(tail*tail) )
+            )
+
+class Model_t_patseq_v2(Model_t_mixin, Model_normal_patseq_v2): pass
 
 
 if __name__ == "__main__":

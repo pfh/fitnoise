@@ -87,7 +87,7 @@ pyref <- function(text) {
     pyexec(sprintf("%s = (%s)", env$name, text))
     
     reg.finalizer(env, function(env) {
-       cat("Freeing",env$name,"\n")
+       #cat("Freeing",env$name,"\n")
        pyexec(sprintf("del %s", env$name)) 
     })
     

@@ -19,6 +19,24 @@ import numpy, numpy.linalg, numpy.random
 import scipy, scipy.optimize, scipy.stats, scipy.special
 
 
+def as_jsonic(item):
+    if isinstance(item, Withable):
+        result = { }
+        for key,value in item.__dict__.items():
+            if key.startswith("_"): continue
+            result[key] = as_jsonic(value)
+        
+        return result
+    
+    elif isinstance(item, list):
+        return [ as_jsonic(item2) for item2 in item ]
+    
+    elif isinstance(item, numpy.ndarray):
+        return item.tolist()
+    
+    else:
+        return item    
+
 
 class Withable(object):
     def _with(self, **kwargs):
@@ -26,7 +44,9 @@ class Withable(object):
         for name in kwargs:
             setattr(result,name,kwargs[name])
         return result
-
+    
+    def as_jsonic(self):
+        return as_jsonic(self)
 
 def is_theanic(x):
     return have_theano and isinstance(x, tensor._tensor_py_operators)

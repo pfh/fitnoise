@@ -47,3 +47,17 @@ Installing Fitnoise from source:
     R CMD INSTALL fitnoise
 
 
+
+
+References
+---
+
+The design of Fitnoise has been influenced by RUV-4, although conceived in very different terms. See Berkley statistical department technical report 820:
+
+http://statistics.berkeley.edu/tech-reports/820
+
+
+
+
+
+

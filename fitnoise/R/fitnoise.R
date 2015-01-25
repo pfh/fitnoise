@@ -19,10 +19,11 @@ mimic.matrix.names <- function(x, template) {
 
 fitnoise.fit <- function(
         y, design, 
-        model="fitnoise.Model_t_standard()",
+        model="Model_t()",
         noise.design=NULL, 
         control.design=NULL, controls=NULL, 
-        weights=NULL, counts=NULL) {
+        weights=NULL, counts=NULL,
+        verbose=FALSE) {
             
     if (class(y) == "EList") {
         if (!is.null(y$weights)) {
@@ -39,7 +40,7 @@ fitnoise.fit <- function(
     if (is.null(noise.design))
         noise.design <- design
     
-    pyexec("import fitnoise")
+    pyexec("from fitnoise import *")
     
     pyset("y", y)
     pyexec("context = {}")
@@ -53,6 +54,7 @@ fitnoise.fit <- function(
     pyset("noise_design", noise.design)
     pyset("control_design", control.design)
     pyset("controls", controls)
+    pyset_scalar("verbose", verbose)
         
     pyexec(sprintf("fit = %s", model))
     pyexec("fit = (
@@ -62,13 +64,16 @@ fitnoise.fit <- function(
             design=noise_design,
             control_design=control_design,
             controls=controls,
+            verbose=verbose,
             )
         .fit_coef(design)
         )")
     
     list(
         pyfit = pyref("fit"),
-        description = pyget("repr(fit)")   
+        description = pyget("repr(fit)"),
+        param = pyget("fit.param.as_jsonic()"),
+        score = pyget("fit.score")
         )
 }
 
@@ -87,8 +92,6 @@ fitnoise.test <- function(
     pyset("fit", fit$pyfit)
     pyset("coef", coef)
     pyset("contrasts", contrasts)
-    
-    pyexec("print repr(fit.design)")
     
     pyexec("fit = fit.test(coef=coef,contrasts=contrasts)")
     
@@ -126,8 +129,6 @@ fitnoise.transform <- function(
     y <- mimic.matrix.names(y, x)
     
     fit <- pyget("repr(fit)")
-
-    pyexec("del x, design, order, verbose, fit")
 
     list(
         x = x,
