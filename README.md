@@ -7,7 +7,7 @@ An R wrapper is provided to allow access from R.
 
 Fitnoise uses the Theano deep-learning library for speed.
 
-Fitnoise is developed by Dr. Paul Harrison for the [RNA Systems Biology Laboratory](rnasystems.erc.monash.edu), Monash University.
+Fitnoise is developed by Dr. Paul Harrison for the [RNA Systems Biology Laboratory](http://rnasystems.erc.monash.edu), Monash University.
 
 This iteration of Fitnoise is not yet complete.
 
