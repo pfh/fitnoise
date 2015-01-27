@@ -30,22 +30,14 @@ Fitting noise and estimating coefficients
 ---
 
 <table>
-<tr><th>Python</th><th>R</th>
-<tr><td>
-
-```
+<tr><th>Python</th><th>R</th></tr>
+<tr><td><pre>
 fitted = model.fit_noise(
     data, design).fit_coef()
-```
-
-</td><td>
-
-```
-fitted <- fitnoise.fit(
+</pre></td><td><pre>
+fitted &lt;- fitnoise.fit(
     data, design, model="Model_t()")
-```
-
-</td></tr></table>
+</pre></td></tr></table>
 
 
 * data is our matrix of expression levels. Columns are samples and rows are genes.
