@@ -7,20 +7,13 @@ This is a basic run-through of how to use Fitnoise.
 You can use Fitnoise either from R+ or Python.
 
 
+
 Loading
 ---
 
-R:
+Python|R
+`import fitnoise`|`library(fitnoise)`
 
-```R
-library(fitnoise)
-```
-
-Python:
-
-```python
-import fitnoise
-```
 
 Choose a noise model
 ---
@@ -42,12 +35,12 @@ Fitting noise and estimating coefficients
 Python:
 
 ```python
-fit = model.fit_noise(data, design).fit_coef()
+fitted = model.fit_noise(data, design).fit_coef()
 ```
 
 R:
 ```R
-fit <- fitnoise.fit(data, design, model="Model_t()")
+fitted <- fitnoise.fit(data, design, model="Model_t()")
 ```
 
 * data is our matrix of expression levels. Columns are samples and rows are genes.
@@ -69,11 +62,28 @@ design <- rbind(c(1,0),c(1,0),c(1,1),c(1,1))
 ```
 
 
-Testing if a coefficient is non-zero
+Testing a hypothesis
 ---
 
+Say we want to test if the second coefficient is non-zero.
 
-Quality of the result
----
+Python:
+
+```python
+tested = fitted.test(coef=[1])
+```
+
+R:
+
+```R
+tested <- fitted.test(coef=c(1))
+```
+
+It's also possible to test multiple coefficients at once, or a contrast of coefficients, or multiple contrasts.
+
+The result contains:
+
+
+
 
 
