@@ -52,8 +52,8 @@ For example if we had two samples in two groups, an appropriate design matrix mi
 
 The result contains:
 
-|Python|R|
-|---|---|
+|Python|R|Description|
+|---|---|---|
 |`fitted.coef`|`fitted$coef`|Matrix of fitted coefficients.|
 |`fitted.coef_dists`||List of posterior multivariate distributions of coefficients.|
 |`fitted.noise_p_values`|`fitted$noise.p.values`|Vector of "noise p-values". A small value for a particular gene may indicate that the noise model was a poor fit for that gene.|
