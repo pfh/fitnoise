@@ -57,7 +57,7 @@ The result contains:
 |`fitted.coef`|`fitted$coef`|Matrix of fitted coefficients.|
 |`fitted.coef_dists`||List of posterior multivariate distributions of coefficients.|
 |`fitted.noise_p_values`|`fitted$noise.p.values`|Vector of "noise p-values". A small value for a particular gene may indicate that the noise model was a poor fit for that gene.|
-|`fitted.noise_combined_p_value`|fitted$noise.combined.p.value`|Bonferroni corrected p-value of the noise p-values. A small value may indicate an overall poor fit for the noise model.|
+|`fitted.noise_combined_p_value`|`fitted$noise.combined.p.value`|Bonferroni corrected p-value of the noise p-values. A small value may indicate an overall poor fit for the noise model.|
 |`repr(fitted)`|`fitted$description`|A summary of various important quantities from the noise fit.|
 
 
