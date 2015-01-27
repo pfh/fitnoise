@@ -270,6 +270,9 @@ class Model(Withable):
             result = '<%s>\n' % self.__class__.__name__
         return result
     
+    def description(self):
+        return repr(self)
+    
     def _unpack(self, packed):
         return Withable()
     
