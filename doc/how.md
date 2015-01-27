@@ -50,27 +50,36 @@ For example if we had two samples in two groups, an appropriate design matrix mi
 |---|---|
 |`design = [[1,0], [1,0], [1,1], [1,1]]`|`design <- rbind(c(1,0),c(1,0),c(1,1),c(1,1))`|
 
+The result contains:
+
+|Python|R|
+|---|---|
+|`fitted.coef`|`fitted$coef`|Matrix of fitted coefficients.|
+|`fitted.coef_dists`||List of posterior multivariate distributions of coefficients.|
+|`fitted.noise_p_values`|`fitted$noise.p.values`|Vector of "noise p-values". A small value for a particular gene may indicate that the noise model was a poor fit for that gene.|
+|`fitted.noise_combined_p_value`|fitted$noise.combined.p.value`|Bonferroni corrected p-value of the noise p-values. A small value may indicate an overall poor fit for the noise model.|
+|`repr(fitted)`|`fitted$description`|A summary of various important quantities from the noise fit.|
+
 
 Testing a hypothesis
 ---
 
 Say we want to test if the second coefficient is non-zero.
 
-Python:
-
-```python
-tested = fitted.test(coef=[1])
-```
-
-R:
-
-```R
-tested <- fitted.test(coef=c(1))
-```
+|Python|R|
+|---|---|
+|`tested = fitted.test(coef=[1])`|`tested <- fitted.test(coef=c(1))`|
 
 It's also possible to test multiple coefficients at once, or a contrast of coefficients, or multiple contrasts.
 
 The result contains:
+
+|Python|R|Description|
+|---|---|---|
+|`tested.p_values`|`tested$p.values`|Vector of p values.|
+|`tested.q_values`|`tested$q.values`|Vector of FDR values, calculated using the Benjamini & Hochberg method.|
+|`tested.contrasts`|`tested$contrasts`|Matrix of the values of the contrasts or coefficients that were tested.|
+|`tested.contrast_dists`||List of multivariate distributions of the contrasts that were tested.|
 
 
 

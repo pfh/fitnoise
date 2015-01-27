@@ -73,7 +73,10 @@ fitnoise.fit <- function(
         pyfit = pyref("fit"),
         description = pyget("repr(fit)"),
         param = pyget("fit.param.as_jsonic()"),
-        score = pyget("fit.score")
+        score = pyget("fit.score"),
+        coef = pyget("fit.coef.tolist()"),
+        noise.p.values = pyget("fit.noise_p_values.tolist()"),
+        noise.combined.p.value = pyget("fit.noise_combined_p_value")
         )
 }
 
