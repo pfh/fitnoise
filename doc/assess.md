@@ -13,3 +13,10 @@ If using a model based on the normal distribution and you obtain a small "noise 
 Generally models based on the t distribution will be able to avoid a small noise combined p-value. When something goes wrong with these models, the "prior df" becomes small. Smaller than around 5 is cause for concern. When the "prior df" is small, you will also obtain few genes declared significantly differentially expressed. In this sense, the models based on the t distribution are safe, their failure mode is to not find significant differential expression.
 
 If you obtain a small "prior df", you may have samples of variable quality, or there may be unwanted variation such as batch effects. Possible solutions are to exclude low quality samples, include a coefficient for a known batch effect, or to use a more advanced noise model.
+
+Choosing between noise models
+---
+
+When trying to choose between noise models, or decide on the exact form a noise model should take for some new kind of data, the model with the smallest "noise fit score" is preferable. The smaller the score, the less surprising the data is given that model.
+
+You could assess whether this score differs significantly between models by bootstrapping.
