@@ -56,9 +56,10 @@ The result contains:
 |---|---|---|
 |`fitted.coef`|`fitted$coef`|Matrix of fitted coefficients.|
 |`fitted.coef_dists`||List of posterior multivariate distributions of coefficients.|
+|`fitted.score`|`fitted$score`|A score of how good the noise fit was, in bits per degree of freedom. When deciding what noise model to use, smaller values are better.|
 |`fitted.noise_p_values`|`fitted$noise.p.values`|Vector of "noise p-values". A small value for a particular gene may indicate that the noise model was a poor fit for that gene.|
 |`fitted.noise_combined_p_value`|`fitted$noise.combined.p.value`|Bonferroni corrected combined p-value of the noise p-values. A small value may indicate an overall poor fit for the noise model.|
-|`fitted.description()`|`fitted$description`|A summary of various important quantities from the noise fit.|
+|`fitted.description`|`fitted$description`|A summary of various important quantities from the noise fit.|
 
 
 Testing a hypothesis
@@ -80,6 +81,11 @@ The result contains:
 |`tested.q_values`|`tested$q.values`|Vector of FDR values, calculated using the Benjamini & Hochberg method.|
 |`tested.contrasts`|`tested$contrasts`|Matrix of the values of the contrasts or coefficients that were tested.|
 |`tested.contrast_dists`||List of multivariate distributions of the contrasts that were tested.|
+
+
+* [Assessing the quality of the fit](assess.md) is important.
+
+
 
 
 

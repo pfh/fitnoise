@@ -270,6 +270,7 @@ class Model(Withable):
             result = '<%s>\n' % self.__class__.__name__
         return result
     
+    @property
     def description(self):
         return repr(self)
     
