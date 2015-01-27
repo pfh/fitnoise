@@ -12,6 +12,7 @@ Loading
 ---
 
 Python|R
+-|-
 `import fitnoise`|`library(fitnoise)`
 
 
