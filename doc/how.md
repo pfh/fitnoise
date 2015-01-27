@@ -29,11 +29,20 @@ Fitnoise provides a variety of "noise models". fitnoise.Model_t behaves very sim
 Fitting noise and estimating coefficients
 ---
 
-|Python|R|
-|---|---|
-```fitted = model.fit_noise(
-    data, design).fit_coef()```|```fitted <- fitnoise.fit(
-    data, design, model="Model_t()")```|
+<table>
+<tr><th>Python</th><th>R</th>
+<tr><td>
+```
+fitted = model.fit_noise(
+    data, design
+    ).fit_coef()
+```
+</td><td>
+```
+fitted <- fitnoise.fit(
+    data, design, model="Model_t()")
+```
+</td></tr></table>
 
 * data is our matrix of expression levels. Columns are samples and rows are genes.
 
