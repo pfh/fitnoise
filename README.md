@@ -11,6 +11,8 @@ Fitnoise is developed by Dr. Paul Harrison for the [RNA Systems Biology Laborato
 
 This iteration of Fitnoise is not yet complete.
 
+* [Documentation](doc)
+
 Download:
 
 * [Download latest or older versions](https://github.com/pfh/fitnoise/releases)
