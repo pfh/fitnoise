@@ -11,9 +11,9 @@ You can use Fitnoise either from R+ or Python.
 Loading
 ---
 
-Python|R
--|-
-`import fitnoise`|`library(fitnoise)`
+|Python|R|
+|---|---|
+|`import fitnoise`|`library(fitnoise)`|
 
 
 Choose a noise model
