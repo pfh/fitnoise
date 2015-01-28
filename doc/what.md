@@ -12,7 +12,7 @@ Context:
 
 We model the expression level for each gene with a linear model then test whether certain coefficients (or contrasts) of this model are significantly non-zero. This is a very general formulation of hypothesis testing that encompasses many standard statistical tests. The simplest is testing for differential expression levels between two groups of samples.
 
-If you have used Limma, this should all seem strangely familiar.
+If you have used Limma, this should all be familiar.
 
 Formally, for each gene we model the expression levels y with:
 
