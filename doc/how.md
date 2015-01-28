@@ -65,11 +65,11 @@ The result contains:
 Testing a hypothesis
 ---
 
-Say we want to test if the second coefficient is non-zero.
+Say we want to test if the second coefficient is non-zero. Remember Python counts from zero and R counts from one.
 
 |Python|R|
 |---|---|
-|`tested = fitted.test(coef=[1])`|`tested <- fitted.test(coef=c(1))`|
+|`tested = fitted.test(coef=[1])`|`tested <- fitted.test(coef=c(2))`|
 
 It's also possible to test multiple coefficients at once, or a contrast of coefficients, or multiple contrasts.
 

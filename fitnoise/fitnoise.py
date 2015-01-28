@@ -457,7 +457,7 @@ class Model_t_mixin(Model):
 
 
     def _describe_noise(self, param):
-        result = 'prior df = %f\n' % param.df
+        result = 'df = %f\n' % param.df
         result += super(Model_t_mixin,self)._describe_noise(param)
         return result 
 
