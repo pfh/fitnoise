@@ -47,9 +47,16 @@ Fitnoise:
 Control genes
 ---
 
-Some hyper-parameters may only be identifiable if there are nominated control genes. These genes are given a simplified design matrix (X) when estimating hyper-parameters.
+Some hyper-parameters may only be identifiable if there are nominated control genes. These genes are given a simplified design matrix (X) when estimating hyper-parameters. These should not be spike-in controls but genes expected not to change due to the experiment, as they should have variability between samples that can be taken as typical of all genes.
 
-This idea is taken from RUV.
+Control genes are needed when:
+
+* Estimating per-sample weights when the group size is 2.
+* Estimating "unwanted variation" in the style of RUV.
+
+They may also improve the accuracy of hyper-parameter estimates in general.
+
+This idea is taken from RUV-4.
 
 
 Multivariate distributions
@@ -61,9 +68,9 @@ Ok, this is the cool bit. One of the cool bits.
 
 The most obvious form of distribution to use for E is a multivariate normal distribution. This yields a noise model where the variance is fixed globally (or a function of contextual information). Fitnoise supports this distribution, however it is generally better to allow the variance to vary from gene to gene somewhat. This can be achieved by using a multivariate t distribution.
 
-There is a "degrees of freedom" (df) parameter in this distribution that determines to what extent the variance is based on a global estimate versus an estimate from the data from that gene. When the df is small, the variance is mostly based on the gene. When the df is large, the variance is mostly based on the global estimate.
+There is a "degrees of freedom" (df) parameter in the multivariate t distribution that determines to what extent the variance is based on a global estimate versus an estimate from the data from that gene. When the df is small, the variance is mostly based on the gene. When the df is large, the variance is mostly based on the global estimate.
 
-This replicates Limma's moderated t-test and F-test capability.
+This replicates Limma's moderated t-test and F-test capability. Fitnoise's `df` is equivalent to Limma's `prior.df`.
 
 
 
