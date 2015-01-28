@@ -16,7 +16,7 @@ If you have used Limma, this should all be familiar.
 
 Formally, for each gene we model the expression levels y with:
 
-    y = X beta + e
+    y = X * beta + e
     
     e sampled from E
     
