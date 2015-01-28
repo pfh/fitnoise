@@ -47,7 +47,7 @@ Fitnoise:
 Control genes
 ---
 
-Some hyper-parameters to do with covariance may only be identifiable if there are nominated control genes. These genes are given a simplified design matrix (X) when estimating hyper-parameters.
+Some hyper-parameters may only be identifiable if there are nominated control genes. These genes are given a simplified design matrix (X) when estimating hyper-parameters.
 
 This idea is taken from RUV.
 
