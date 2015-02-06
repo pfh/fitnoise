@@ -65,5 +65,5 @@ This should behave similarly to RUV-4, however has not been thoroughly tested.
 Model_normal_patseq() / Model_t_patseq()
 ---
 
-`y` are average tail lengths. Additionally a `counts` matrix also needs to be given. Where the count is zero, y should be NaN (Python) or NA (R).
+`y` are average tail lengths. Additionally a `counts` matrix needs to be given. Where the count is zero, y should be NaN (Python) or NA (R).
 
