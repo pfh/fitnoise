@@ -47,7 +47,7 @@ As with `Model_normal()` and `Model_t()`, however each sample receives its own v
 
 (This is similar to `arrayWeights` in Limma, but with the array weight estimation performed simultaneously with estimation of other noise parameters.)
 
-**Note:** Do not use this with two replicates per experimental group, per-sample variances are only identifiable with 3x replication or higher.
+**Note:** Unless you specify control genes, do not use this with two replicates per experimental group. Per-sample variances are only identifiable with 3x replication or higher, or with control genes specified.
 
 
 
