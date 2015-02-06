@@ -10,8 +10,7 @@ Model_normal()
 
 Errors `epsilon[i,j]` are assumed normally distributed, with equal varariance for all genes.
 
-If a weights matrix is supplied with the dataset, the variance of each `epsilon[i,j]` of 
-is `variance / weight[i,j]`, where variance is the globally estimated `variance` parameter.
+If a weights matrix is supplied with the dataset, the variance of each `epsilon[i,j]` is `variance / weight[i,j]`, where variance is the globally estimated `variance` parameter.
 
 In Python, a weights matrix is given by creating a `fitnoise.Dataset` object with 
 
