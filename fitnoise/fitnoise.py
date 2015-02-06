@@ -509,14 +509,12 @@ class Model_normal(Model):
         
         assert aux.shape == self.data.y.shape
         
-        flat = (self.data.y / numpy.sqrt(aux)).flat
-        flat = flat[numpy.isfinite(flat)]
-        var = numpy.var(flat) if len(flat) > 3 else 1.0
+        var = numpy.mean(numpy.var(self.data.y, axis=1))
         
         return self._with(
             _aux = aux,
             _initial = [var],
-            _bounds = [(var*1e-12,var*2.0)],
+            _bounds = [(var*1e-6,var*1e6)],
             )
 
 
@@ -592,14 +590,12 @@ class Model_normal_per_sample(Model):
         
         assert aux.shape == self.data.y.shape
         
-        flat = (self.data.y / numpy.sqrt(aux)).flat
-        flat = flat[numpy.isfinite(flat)]
-        var = numpy.var(flat) if len(flat) > 3 else 1.0
+        var = numpy.mean(numpy.var(self.data.y, axis=1))
         
         return self._with(
             _aux = aux,
             _initial = [var]*m,
-            _bounds = [(var*1e-12,var*2.0)]*m,
+            _bounds = [(var*1e-6,var*1e6)]*m,
             )
 
 class Model_t_per_sample(Model_t_mixin, Model_normal_per_sample): pass
