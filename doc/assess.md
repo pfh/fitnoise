@@ -10,9 +10,9 @@ The "noise combined p value", if all is going well, is a random number between z
 
 If using a model based on the normal distribution and you obtain a small "noise combined p value", this is good reason to switch to the corresponding model based on the t distribution.
 
-Generally models based on the t distribution will be able to avoid a small noise combined p-value. When something goes wrong with these models, the "df" (degrees of freedom) becomes small. Smaller than around 5 is cause for concern. When the "df" is small, you will also obtain few genes declared significantly differentially expressed. In this sense, the models based on the t distribution are safe, their failure mode is to not find significant differential expression.
+Generally models based on the t distribution will be able to avoid a small noise combined p value. When something goes wrong with these models, the "df" (degrees of freedom) becomes small. Smaller than around 5 is cause for concern. When the "df" is small, you will also obtain few genes declared significantly differentially expressed. In this sense, the models based on the t distribution are safer, their failure mode is to not find significant differential expression.
 
-If you obtain a small "df", you may have samples of variable quality, or there may be unwanted variation such as batch effects. Possible solutions are to exclude low quality samples, include a coefficient for a known batch effect, or to use a more advanced noise model.
+If you obtain a small "df", you may have samples of variable quality, or there may be unwanted variation such as batch effects. Possible solutions are to exclude low quality samples, exclude lowly expressed genes, include a coefficient for a known batch effect, or to use a more advanced [noise model](models.md). For example you could use a noise model with per-sample variances, or a noise model that includes random effects identified using control genes.
 
 Choosing between noise models
 ---
