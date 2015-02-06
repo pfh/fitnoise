@@ -45,7 +45,7 @@ Model_normal_per_sample() / Model_t_per_sample()
 
 As with `Model_normal()` and `Model_t()`, however each sample receives its own variance estimate.
 
-(This is similar to `arrayWeights` in Limma, but with the array weighting folded into the `eBayes` step and with a consistent noise model throughout.)
+(This is similar to `arrayWeights` in Limma, but with the array weight estimation performed simultaneously with estimation of other noise parameters.)
 
 **Note:** Do not use this with two replicates per experimental group, per-sample variances are only identifiable with 3x replication or higher.
 
