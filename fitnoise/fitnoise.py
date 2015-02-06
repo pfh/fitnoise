@@ -22,6 +22,7 @@ check L'i = Li' ... yes
 from .env import *
 from .distributions import Mvnormal, Mvt
 from . import p_adjust
+import sys
 
 
 def _fit_noise(y, designs, get_model_cost, get_dist, initial, 
@@ -33,13 +34,13 @@ def _fit_noise(y, designs, get_model_cost, get_dist, initial,
     row_retain_tQ2_z2 = { }
     for row in xrange(n):
         design = designs[row]
-        retain = numpy.arange(m)[ 
+        retain = numpy.arange(m, dtype="int32")[ 
             numpy.isfinite(y[row]) & get_dist(initial,aux[row]).good
             ]
         if len(retain) <= design.shape[1]: continue
         
         Q,R = qr_complete(design[retain])
-        i2 = numpy.arange(design.shape[1],len(retain))        
+        i2 = numpy.arange(design.shape[1],len(retain), dtype="int32")        
         tQ2 = Q[:,i2].T
         z2 = dot(tQ2, y[row,retain])
         items.append( (aux[row], retain, tQ2, z2) )
@@ -79,7 +80,7 @@ def _fit_noise(y, designs, get_model_cost, get_dist, initial,
             method="L-BFGS-B",
             bounds=bounds), row_retain_tQ2_z2
 
-    vaux = tensor.ivector("aux")
+    vaux = tensor.dvector("aux")
     vretain = tensor.ivector("retain")
     vtQ2 = tensor.dmatrix("tQ2")
     vz2 = tensor.dvector("z2")
@@ -100,7 +101,7 @@ def _fit_noise(y, designs, get_model_cost, get_dist, initial,
             ],
         on_unused_input="ignore",
         allow_input_downcast=True)
-
+    
     vcost_value = get_model_cost(vparam)
     if not is_theanic(vcost_value):
         # It's a constant, disregard.
@@ -119,65 +120,19 @@ def _fit_noise(y, designs, get_model_cost, get_dist, initial,
             allow_input_downcast=True)
     
     def value_gradient(items, param):
+        if verbose:
+            print param,
+            sys.stdout.flush()
         svalue.set_value(0.0)
         sgradient.set_value(numpy.zeros(len(param)))
         cost_vg_func(param)
         for item in items:
             vg_func(param,*item)
         if verbose:
-            print param, svalue.get_value()
+            print "->", svalue.get_value()
         return svalue.get_value().copy(), sgradient.get_value().copy()
     
     score = lambda param: value_gradient(items, param) 
-    
-    #import IPython.parallel
-    #c = IPython.parallel.Client()
-    #view = c[:]
-    #
-    #view.execute("import numpy, theano")
-    #view.scatter('items', items)
-    #
-    #view['thingy'] = dict([(name,locals()[name]) for name in
-    #    ['initial','vaux','vretain','vtQ2',
-    #     'vz2','vparam','vvalue','vgradient']])
-    #
-    #view.execute("""if 1:
-    #for name in thingy:
-    #    locals()[name] = thingy[name]
-    #
-    #svalue = theano.shared(numpy.zeros(()))
-    #sgradient = theano.shared(numpy.zeros(len(initial)))
-    #
-    #vg_func = theano.function(
-    #    [vparam,vaux,vretain,vtQ2,vz2], 
-    #    #[vvalue,vgradient],
-    #    [],
-    #    updates=[
-    #        (svalue,svalue+vvalue),
-    #        (sgradient,sgradient+vgradient),
-    #        ],
-    #    on_unused_input='ignore',
-    #    allow_input_downcast=True)
-    #    """, block=True)
-    #view.execute("""def value_gradient(items, param):
-    #    svalue.set_value(0.0)
-    #    sgradient.set_value(numpy.zeros(len(param)))
-    #    for item in items:
-    #        vg_func(param.copy(),*item)
-    #    return svalue.get_value().copy(), sgradient.get_value().copy()
-    #    """)
-    #view.execute("""doit = lambda: value_gradient(items,param)""")
-    #
-    #def score(param):
-    #    total_value = 0.0
-    #    total_gradient = numpy.zeros(len(param))
-    #    view['param'] = param
-    #    for value, gradient in view.apply_sync(lambda: doit()):
-    #        total_value = total_value + value
-    #        total_gradient += gradient
-    #    if verbose:
-    #        print param, total_value
-    #    return total_value, total_gradient 
     
     
     opt_result = scipy.optimize.minimize(
@@ -190,62 +145,11 @@ def _fit_noise(y, designs, get_model_cost, get_dist, initial,
             gtol = 1e-12,
             ),
         )
-     
+    
     if verbose:
         print opt_result
         
     return opt_result, row_retain_tQ2_z2
-    
-    #vvalue = score_row(vaux, vretain, vtQ2, vz2, vparam)
-    #vgradient = gradient.grad(vvalue, vparam)
-    #vhessian = gradient.hessian(vvalue, vparam)
-    #
-    #svalue = theano.shared(0.0)
-    #sgradient = theano.shared(numpy.zeros(len(initial)))
-    #shessian = theano.shared(numpy.zeros((len(initial),len(initial))))
-    #
-    #vgh_func = theano.function(
-    #    [vaux,vretain,vtQ2,vz2,vparam], 
-    #    [],
-    #    updates = [
-    #        (svalue,svalue+vvalue),
-    #        (sgradient,sgradient+vgradient),
-    #        (shessian,shessian+vhessian),
-    #        ],
-    #    on_unused_input='ignore',
-    #    allow_input_downcast=True)
-    #
-    #def value_gradient_hessian(param):
-    #    svalue.set_value(0.0)
-    #    sgradient.set_value(numpy.zeros(len(param)))
-    #    shessian.set_value(numpy.zeros((len(param),len(param))))
-    #    for item in items:
-    #        vgh_func(item.aux,item.retain,item.tQ2,item.z2,param)
-    #    if verbose:
-    #        print param, svalue.get_value()
-    #    return svalue.get_value().copy(), sgradient.get_value().copy(), shessian.get_value().copy()
-    #
-    #cache = { }
-    #def get(param):
-    #    key = tuple(param)
-    #    if key not in cache:
-    #        cache[key] = value_gradient_hessian(key)
-    #    return cache[key]
-    #
-    ##return scipy.optimize.minimize(
-    ##    lambda x: get(x)[0], initial,
-    ##    method='trust-ncg', jac=lambda x: get(x)[1], hess=lambda x: get(x)[2],
-    ##    bounds=((0.0,100.0),)*len(initial)
-    ##    )
-    #
-    #param = initial
-    #for i in xrange(30):
-    #    v,g,h = value_gradient_hessian(param)
-    #    #print 'D', numpy.diag(h)
-    #    #h += numpy.identity(h.shape[0]) * 1e-6
-    #    #print 'D', numpy.diag(h)
-    #    param = param - numpy.linalg.solve(h,g)
-    #return param
 
 
 
@@ -603,6 +507,8 @@ class Model_normal(Model):
         else:
             aux = numpy.ones(self.data.y.shape)
         
+        assert aux.shape == self.data.y.shape
+        
         flat = (self.data.y / numpy.sqrt(aux)).flat
         flat = flat[numpy.isfinite(flat)]
         var = numpy.var(flat) if len(flat) > 3 else 1.0
@@ -610,7 +516,7 @@ class Model_normal(Model):
         return self._with(
             _aux = aux,
             _initial = [var],
-            _bounds = [(var*1e-6,var*2.0)],
+            _bounds = [(var*1e-12,var*2.0)],
             )
 
 
@@ -625,6 +531,7 @@ class Model_normal_factors(
 class Model_t_factors(
     Model_t_mixin, Model_factors_mixin, Model_normal
     ): pass
+
 
 
 class Model_independent(Model):
@@ -653,6 +560,49 @@ class Model_independent(Model):
 class Model_independent_factors(
     Model_factors_mixin, Model_independent
     ): pass
+
+
+
+class Model_normal_per_sample(Model):
+    def _unpack(self, pack):
+        return Withable()._with(variances=pack)
+            
+    
+    def _describe_noise(self, param):
+        return "s.d. = [%s]\n" % (
+            ','.join([ "%f" % item for item in numpy.sqrt(param.variances) ])
+            )
+    
+    
+    def _get_dist(self, param, aux):
+        m = aux.shape[0]
+        return Mvnormal(
+            zeros((m,)),
+            diag(param.variances * aux),
+            )
+
+
+    def _configured(self):
+        m = self.data.y.shape[1]
+    
+        if 'weights' in self.data.context:
+            aux = 1.0 / as_matrix(self.data.context['weights'])
+        else:
+            aux = numpy.ones(self.data.y.shape)
+        
+        assert aux.shape == self.data.y.shape
+        
+        flat = (self.data.y / numpy.sqrt(aux)).flat
+        flat = flat[numpy.isfinite(flat)]
+        var = numpy.var(flat) if len(flat) > 3 else 1.0
+        
+        return self._with(
+            _aux = aux,
+            _initial = [var]*m,
+            _bounds = [(var*1e-12,var*2.0)]*m,
+            )
+
+class Model_t_per_sample(Model_t_mixin, Model_normal_per_sample): pass
 
 
 
