@@ -25,7 +25,7 @@ where
     y = a vector giving the expression level for each sample (for this gene)
     X = a design matrix (same for all genes, unless there are control genes)
     beta = coefficients to be estimated for this gene
-    e = random noise (for this gene)
+    e = a vector of random noise (for this gene)
     E = the multivariate distribution from which e is sampled (for this gene)
 
 The distribution E is a function of a set of hyper-parameters (to be estimated using the entire data-set) and possibly contextual information such as precision weights. This function is the *noise model*. Fitnoise provides a variety of noise models, and it is easy to add new models.
@@ -51,7 +51,7 @@ Some hyper-parameters may only be identifiable if there are nominated control ge
 
 Control genes are needed when:
 
-* Estimating per-sample weights when the group size is 2.
+* Estimating per-sample variances when the group size is 2.
 * Estimating "unwanted variation" in the style of RUV.
 
 They may also improve the accuracy of hyper-parameter estimates in general.
@@ -70,7 +70,7 @@ The most obvious form of distribution to use for E is a multivariate normal dist
 
 There is a "degrees of freedom" (df) parameter in the multivariate t distribution that determines to what extent the variance is based on a global estimate versus an estimate from the data from that gene. When the df is small, the variance is mostly based on the gene. When the df is large, the variance is mostly based on the global estimate.
 
-This replicates Limma's moderated t-test and F-test capability. Fitnoise's `df` is equivalent to Limma's `prior.df`.
+This replicates Limma's moderated t-test and F-test capability. Fitnoise's `df` is equivalent to Limma's `df.prior`.
 
 
 

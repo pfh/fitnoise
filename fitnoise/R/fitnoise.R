@@ -42,6 +42,9 @@ fitnoise.fit <- function(
     
     pyexec("from fitnoise import *")
     
+    
+    y[is.na(y)] <- NaN
+    
     pyset("y", y)
     pyexec("context = {}")
     if (!is.null(weights))
@@ -71,12 +74,13 @@ fitnoise.fit <- function(
     
     list(
         pyfit = pyref("fit"),
-        description = pyget("repr(fit)"),
-        param = pyget("fit.param.as_jsonic()"),
-        score = pyget("fit.score"),
-        coef = pyget("fit.coef.tolist()"),
-        noise.p.values = pyget("fit.noise_p_values.tolist()"),
-        noise.combined.p.value = pyget("fit.noise_combined_p_value")
+        description = pyget("fit.description"),
+        param = pyget("as_jsonic( fit.param )"),
+        score = pyget("as_jsonic([ fit.score ])"),
+        coef = pyget("as_jsonic( fit.coef )"),
+        noise.p.values = pyget("as_jsonic( fit.noise_p_values )"),
+        noise.combined.p.value = pyget("as_jsonic([ fit.noise_combined_p_value ])"),
+        averages = pyget("as_jsonic( fit.averages )")
         )
 }
 
@@ -99,44 +103,54 @@ fitnoise.test <- function(
     pyexec("fit = fit.test(coef=coef,contrasts=contrasts)")
     
     fit$pyfit <- pyref("fit")
-    fit$description <- pyget("repr(fit)")  
+    fit$description <- pyget("fit.description")  
     
-    fit$contrasts <- pyget("fit.contrasts.tolist()")
+    fit$contrasts <- pyget("as_jsonic( fit.contrasts )")
     if (!is.null(colnames(contrasts)))
         colnames(fit$contrasts) <- colnames(contrasts)
     
-    fit$p.values <- pyget("fit.p_values.tolist()")
-    fit$q.values <- pyget("fit.q_values.tolist()")
+    fit$p.values <- pyget("as_jsonic( fit.p_values )")
+    fit$q.values <- pyget("as_jsonic( fit.q_values )")
     
     fit
 }
 
 
+
+fitnoise.weights <- function(fit) {
+    pyset("fit", fit$pyfit)    
+    pyget("as_jsonic( fit.get_weights() )")
+}
+
+
+
 fitnoise.transform <- function(
         x, design=NULL, order=2,
         verbose=FALSE) {
-    
+
+    pyexec("from fitnoise import *")    
+        
     pyset("x",x)
     pyset("design",design)
     pyset_scalar("order",order)
     pyset_scalar("verbose",verbose)
     
-    pyexec("fit = fitnoise.transform(
+    pyexec("fit = transform(
         x=x,
         design=design,
         order=order,
         verbose=verbose,
         )")
 
-    y <- pyget("fit.y.tolist()")
+    y <- pyget("as_jsoinc( fit.y )")
     y <- mimic.matrix.names(y, x)
     
-    fit <- pyget("repr(fit)")
+    description <- pyget("repr(fit)")
 
     list(
         x = x,
         design = design,
-        fit = fit,
+        description = description,
         y = y
         )
 }

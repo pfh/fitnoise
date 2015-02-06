@@ -20,6 +20,8 @@ import scipy, scipy.optimize, scipy.stats, scipy.special
 
 
 def as_jsonic(item):
+    """ Render a python object suitable for serializing as JSON
+        and loading into R with jsonlite. """    
     if isinstance(item, Withable):
         result = { }
         for key,value in item.__dict__.items():
@@ -32,7 +34,10 @@ def as_jsonic(item):
         return [ as_jsonic(item2) for item2 in item ]
     
     elif isinstance(item, numpy.ndarray):
-        return item.tolist()
+        return as_jsonic( item.tolist() )
+    
+    elif item != item: #NaN
+        return None
     
     else:
         return item    
@@ -44,9 +49,7 @@ class Withable(object):
         for name in kwargs:
             setattr(result,name,kwargs[name])
         return result
-    
-    def as_jsonic(self):
-        return as_jsonic(self)
+
 
 def is_theanic(x):
     return have_theano and isinstance(x, tensor._tensor_py_operators)

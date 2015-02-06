@@ -81,13 +81,14 @@ run.limma <- function(data, fdr) {
     data$fit <- fit
     data$toptable <- tt
     data$declared_de <- tt$adj.P.Val <= fdr
+    data$declared_de[ is.na(data$declared_de) ] <- FALSE
 
     judge(data)
 }
 
 
-run.fitnoise <- function(data, fdr) {
-    data$fit <- fitnoise.fit(data$elist, data$design)
+run.fitnoise <- function(data, fdr,  model="Model_t()") {
+    data$fit <- fitnoise.fit(data$elist, data$design, model=model, verbose=T)
     data$fit <- fitnoise.test(data$fit, data$test_coef)
     
     data$declared_de <- data$fit$q.values <= fdr

@@ -1,0 +1,18 @@
+limma.df Inf [5.189,Inf]
+limma.sd 1.001 [0.923,1.079]
+limma.sensitivity 0.607 [0.000,0.920]
+limma.fdr 0.013 [0.000,0.056]
+fitnoise.df 10.562 [7.450,16.683]
+fitnoise.sd 1.000 [0.957,1.050]
+fitnoise.sensitivity 0.649 [0.360,0.840]
+fitnoise.fdr 0.010 [0.000,0.039]
+[1] 1000
+patseq df 12.611 [11.513,13.914]
+patseq read_sd 27.954 [27.530,28.398]
+patseq sample_sd 0.049 [0.048,0.050]
+patseq significant 931.000 [849.950,1021.000]
+patseq limma df 3.139 [2.967,3.337]
+patseq limma significant 493.000 [424.000,577.025]
+931 significant
+13 significant and positive change
+-10.00876 mean change

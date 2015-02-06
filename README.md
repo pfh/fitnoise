@@ -9,7 +9,9 @@ Fitnoise uses the Theano deep-learning library for speed.
 
 Fitnoise is developed by Dr. Paul Harrison for the [RNA Systems Biology Laboratory](http://rnasystems.erc.monash.edu), Monash University.
 
-This iteration of Fitnoise is not yet complete.
+Overview:
+
+* [Poster presented at ABiC 2014](http://f1000.com/posters/browse/summary/1097121) describes the previous R based Fitnoise.
 
 Documentation:
 

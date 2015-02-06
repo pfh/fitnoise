@@ -2,6 +2,8 @@
 output/
 venv/
 Rplots.pdf
+out-*.csv
+out-*.png
 
 #=========================
 

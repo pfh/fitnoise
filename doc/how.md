@@ -25,6 +25,8 @@ Fitnoise provides a variety of "noise models". fitnoise.Model_t behaves very sim
 |---|---|
 |```model = fitnoise.Model_t()```| We will pass an appropriate model selection in the next step. |
 
+* [More noise models.](models.md)
+
 
 Fitting noise and estimating coefficients
 ---
@@ -56,6 +58,7 @@ The result contains:
 |---|---|---|
 |`fitted.coef`|`fitted$coef`|Matrix of fitted coefficients.|
 |`fitted.coef_dists`||List of posterior multivariate distributions of coefficients.|
+|`fitted.averages`|`fitted$averages`|Row averages. Missing values are ignored, nothing special is done beyond this.|
 |`fitted.score`|`fitted$score`|A score of how good the noise fit was, in bits per degree of freedom. When deciding what noise model to use, smaller values are better.|
 |`fitted.noise_p_values`|`fitted$noise.p.values`|Vector of "noise p-values". A small value for a particular gene may indicate that the noise model was a poor fit for that gene.|
 |`fitted.noise_combined_p_value`|`fitted$noise.combined.p.value`|Bonferroni corrected combined p-value of the noise p-values. A small value may indicate an overall poor fit for the noise model.|
