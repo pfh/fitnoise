@@ -34,8 +34,7 @@ Fitting noise and estimating coefficients
 <table>
 <tr><th>Python</th><th>R</th></tr>
 <tr><td><pre>
-fitted = model.fit_noise(
-    data, design).fit_coef()
+fitted = model.fit(data, design)
 </pre></td><td><pre>
 fitted &lt;- fitnoise.fit(
     data, design, model="Model_t()")
@@ -87,10 +86,3 @@ The result contains:
 
 
 * [Assessing the quality of the fit](assess.md) is important.
-
-
-
-
-
-
-

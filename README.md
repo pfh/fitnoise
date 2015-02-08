@@ -19,6 +19,7 @@ Documentation:
 * [How to use Fitnoise](doc/how.md)
 * [Assessing a the quality of a fit](doc/assess.md)
 * [Noise models available](doc/models.md)
+* [Control genes](doc/controls.md) (and what to do if you don't have replicates)
 
 Download:
 
@@ -63,13 +64,13 @@ Installing dependencies:
 To install Fitnoise with pip:
 
     pip install fitnoise
-    
+
     python -m fitnoise
     # This prints out instructions to install the R component
 
 Alternatively, to install Fitnoise from source:
-    
-    python setup.py install     
+
+    python setup.py install
     R CMD INSTALL fitnoise
 
 
@@ -85,9 +86,3 @@ http://bioinf.wehi.edu.au/limma/
 The design of Fitnoise has been influenced by RUV-4, although conceived in different terms. See Berkley statistical department technical report 820:
 
 http://statistics.berkeley.edu/tech-reports/820
-
-
-
-
-
-

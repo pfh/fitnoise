@@ -2,7 +2,8 @@
 Noise models
 ===
 
-The most typical model to use will be `Model_t()` for microarrays or RNA-Seq (in combination with Limma's `voom`). However we will first introduce a couple of simpler models.
+The most typical model to use will be `Model_t()` for microarrays. `Model_t()` can also be used for RNA-Seq in combination with Limma's `voom` function. However we will introduce a couple of simpler models first.
+
 
 
 Model_normal()
@@ -12,7 +13,7 @@ Errors `epsilon[i,j]` are assumed normally distributed, with equal varariance fo
 
 If a weights matrix is supplied with the dataset, the variance of each `epsilon[i,j]` is `variance / weight[i,j]`, where variance is the globally estimated `variance` parameter.
 
-In Python, a weights matrix is given by creating a `fitnoise.Dataset` object with 
+In Python, a weights matrix is given by creating a `fitnoise.Dataset` object with
 
 ```
 fitnoise.Dataset(y, dict(weights=weights))
@@ -25,7 +26,7 @@ In R, weights are passed as a parameter to `fitnoise.fit` or the `y` parameter o
 Model_independent()
 ---
 
-As with `Model_normal()`, but genes each have their own variance, independently.
+As with `Model_normal()`, but genes each have their own variance, independently. This is like performing a t-test or F-test on each gene independently.
 
 Internally this is implemented using a multivariate t distribution with `df` (very close to) zero.
 
@@ -67,3 +68,4 @@ Model_normal_patseq() / Model_t_patseq()
 
 `y` are average tail lengths. Additionally a `counts` matrix needs to be given. Where the count is zero, y should be NaN (Python) or NA (R).
 
+The accuracy of each tail length is a function of per-read variance and per-sample variance. The more reads that contributed to the average, the more accurate, but because there is also sample-level variance the accuracy doesn't go to zero with more and more reads.
