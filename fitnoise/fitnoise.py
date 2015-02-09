@@ -348,7 +348,7 @@ class Model(Withable):
             .fit_coef(design)
             )
 
-    
+
     def test(self, coef=None, contrasts=None):
         if coef:
             assert contrasts is None
@@ -760,39 +760,3 @@ class Model_normal_patseq_v3(Model):
             )
 
 class Model_t_patseq_v3(Model_t_mixin, Model_normal_patseq_v3): pass
-
-
-#
-#
-#class Model_normal_patseq_v2(Model):
-#    """ Differential tail length detection in PAT-Seq, slight variation on model """
-#
-#    def _unpack(self, pack):
-#        return Withable()._with(
-#            read_variance = pack[0],
-#            sample_variance = pack[1],
-#            )
-#
-#    def _describe_noise(self, param):
-#        return "variance = (%f^2 / reads + %f^2) * tail^2" % (
-#            numpy.sqrt(param.read_variance),
-#            numpy.sqrt(param.sample_variance)
-#            )
-#
-#    def _get_dist(self, param, aux):
-#        m = aux.shape[0]//2
-#        count = aux[:m]
-#        tail = aux[m:]
-#        return Mvnormal(
-#            zeros((aux.shape[0],)),
-#            diag( (param.read_variance/count + param.sample_variance)*(tail*tail) )
-#            )
-#
-#class Model_t_patseq_v2(Model_t_mixin, Model_normal_patseq_v2): pass
-#
-
-if __name__ == "__main__":
-    numpy.random.seed(1)
-    dist = Mvt([5,5,5,5],numpy.identity(4), 5.0)
-    data = numpy.array([ dist.random() for i in xrange(1000) ])
-    print model_t_standard.fit_noise(data, [[1]]*4)
