@@ -60,7 +60,7 @@ fitnoise.fit <- function(
     pyset_scalar("verbose", verbose)
 
     pyexec(sprintf("fit = %s", model))
-    pyexec("fit = (fit.fit(
+    pyexec("fit = fit.fit(
         dataset,
         design=design,
         noise_design=noise_design,
@@ -86,7 +86,6 @@ fitnoise.fit <- function(
 fitnoise.test <- function(
         fit, coef=NULL, contrasts=NULL
         ) {
-
     if (!is.null(coef))
         coef <- coef - 1  #Python is zero based
 

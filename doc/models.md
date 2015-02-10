@@ -69,3 +69,9 @@ Model_normal_patseq() / Model_t_patseq()
 `y` are average tail lengths. Additionally a `counts` matrix needs to be given. Where the count is zero, y should be NaN (Python) or NA (R).
 
 The accuracy of each tail length is a function of per-read variance and per-sample variance. The more reads that contributed to the average, the more accurate, but because there is also sample-level variance the accuracy doesn't go to zero with more and more reads.
+
+`Model_normal_patseq_per_sample()` and `Model_t_patseq_per_sample()` are also available.
+
+*Note:* Model_t_patseq_v1() was used for the Lorne Genome Conference 2015 poster. This cheats slightly by basing the noise on individual tail lengths. I don't think this makes a practical difference, but for the sake of punctilious correctness this current version uses the tail length averaged over all samples (weighted by count).
+
+

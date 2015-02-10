@@ -1,5 +1,9 @@
 
 2.2 - Add model.fit method.
+      Fix to test.fit
+      - Note: bool(numpy.array([0])) == False
+      Fix to Model_normal_patseq, sanitize everything better
+      Make patseq v2 the default (blind noise distribution to individual samples)
 
 2.1 - Initial release of python version of fitnoise
       An earlier R version is included in Nesoni.

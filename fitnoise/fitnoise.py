@@ -29,7 +29,6 @@ def _fit_noise(y, designs, get_model_cost, get_dist, initial,
                aux, bounds, use_theano, verbose):
     n,m = y.shape
 
-
     items = [ ]
     row_retain_tQ2_z2 = { }
     for row in xrange(n):
@@ -63,7 +62,9 @@ def _fit_noise(y, designs, get_model_cost, get_dist, initial,
         warnings.warn("Couldn't import theano, calculations may be slow")
         use_theano = False
 
+
     # Non-theanic
+
     if not use_theano:
         def score(param):
             total_value = get_model_cost(param) + \
@@ -75,10 +76,18 @@ def _fit_noise(y, designs, get_model_cost, get_dist, initial,
                 print param, total_value
             return total_value
 
-        return scipy.optimize.minimize(
+        opt_result =  scipy.optimize.minimize(
             score, initial,
             method="L-BFGS-B",
-            bounds=bounds), row_retain_tQ2_z2
+            bounds=bounds)
+        
+        if verbose:
+            print opt_result
+        
+        return opt_result, row_retain_tQ2_z2
+
+
+    #Theanic
 
     vaux = tensor.dvector("aux")
     vretain = tensor.ivector("retain")
@@ -135,19 +144,24 @@ def _fit_noise(y, designs, get_model_cost, get_dist, initial,
     score = lambda param: value_gradient(items, param)
 
 
-    opt_result = scipy.optimize.minimize(
-        score, initial,
-        method="L-BFGS-B",
-        jac=True,
-        bounds=bounds,
-        options=dict(
-            ftol = 1e-12, #Optimization terminates too early without this
-            gtol = 1e-12,
-            ),
-        )
-
-    if verbose:
-        print opt_result
+    # Repeat optimization until it stops changing
+    
+    while True:
+        opt_result = scipy.optimize.minimize(
+            score, initial,
+            method="L-BFGS-B",
+            jac=True,
+            bounds=bounds,
+            options=dict(
+                ftol = 1e-12, #Optimization terminates too early without this
+                gtol = 1e-12,
+                ),
+            )
+        if verbose:
+            print opt_result
+        if numpy.all( numpy.abs(opt_result.x - initial) < 1e-6 ):
+            break
+        initial = opt_result.x
 
     return opt_result, row_retain_tQ2_z2
 
@@ -350,13 +364,13 @@ class Model(Withable):
 
 
     def test(self, coef=None, contrasts=None):
-        if coef:
+        if coef is not None:
             assert contrasts is None
             contrasts = numpy.zeros((self.design.shape[1], len(coef)))
             for i in xrange(len(coef)):
                 contrasts[coef[i],i] = 1.0
 
-        assert contrasts is not None
+        assert contrasts is not None, "No coefficients or contrasts to test given."
         contrasts = as_matrix(contrasts)
 
         n = self.data.y.shape[0]
@@ -446,7 +460,7 @@ class Model_factors_mixin(Model):
         m2 = self._factor_Q2.shape[1]
         result = ''
         for i in xrange(self.n_factors):
-            result += 'factor: %s\n' % ', '.join('%f'%item for item in param.factors[i])
+            result += 'factor: [%s]\n' % ', '.join('%f'%item for item in param.factors[i])
         result += super(Model_factors_mixin,self)._describe_noise(param)
         return result
 
@@ -508,7 +522,7 @@ class Model_normal(Model):
 
 
     def _describe_noise(self, param):
-        return "s.d. = %f\n" % numpy.sqrt(param.variance)
+        return "sd = %f\n" % numpy.sqrt(param.variance)
 
 
     def _get_dist(self, param, aux):
@@ -585,8 +599,8 @@ class Model_normal_per_sample(Model):
 
 
     def _describe_noise(self, param):
-        return "s.d. = [%s]\n" % (
-            ','.join([ "%f" % item for item in numpy.sqrt(param.variances) ])
+        return "sd = [%s]\n" % (
+            ', '.join([ "%f" % item for item in numpy.sqrt(param.variances) ])
             )
 
 
@@ -620,17 +634,20 @@ class Model_t_per_sample(Model_t_mixin, Model_normal_per_sample): pass
 
 
 
-class Model_normal_patseq(Model):
+class Model_normal_patseq_v1(Model):
     """ Differential tail length detection in PAT-Seq """
+    
     def _configured(self):
-        counts = as_matrix(self.data.context['counts']).copy()
+        counts = as_matrix(self.data.context['counts'])
         assert counts.shape == self.data.y.shape
 
         # Sanitize counts
         assert numpy.all( ~numpy.isfinite(self.data.y)[counts == 0] ), "Tail lengths with zero count should be NaN (or NA in R)"
-        counts = numpy.maximum(counts, 1.0)
+        sanitized_counts = numpy.maximum(counts, 1.0)
+        sanitized_tails = self.data.y.copy()
+        sanitized_tails[ ~numpy.isfinite(sanitized_tails) ] = 0.0
 
-        aux = numpy.concatenate([ counts, self.data.y ], axis=1)
+        aux = numpy.concatenate([ sanitized_counts, sanitized_tails ], axis=1)
         return self._with(
             _aux = aux,
             _initial = [ 250.0, 0.01 ],
@@ -658,7 +675,54 @@ class Model_normal_patseq(Model):
             diag( param.read_variance/count + param.sample_variance*(tail*tail) )
             )
 
-class Model_t_patseq(Model_t_mixin, Model_normal_patseq): pass
+class Model_t_v1_patseq(Model_t_mixin, Model_normal_patseq_v1): pass
+
+
+class Model_normal_patseq_v1_per_sample(Model):
+    """ Differential tail length detection in PAT-Seq.
+        Per-sample weighting. """
+    
+    def _configured(self):
+        m = self.data.y.shape[1]
+        counts = as_matrix(self.data.context['counts'])
+        assert counts.shape == self.data.y.shape
+
+        # Sanitize counts
+        assert numpy.all( ~numpy.isfinite(self.data.y)[counts == 0] ), "Tail lengths with zero count should be NaN (or NA in R)"
+        sanitized_counts = numpy.maximum(counts, 1.0)
+        sanitized_tails = self.data.y.copy()
+        sanitized_tails[ ~numpy.isfinite(sanitized_tails) ] = 0.0
+
+        aux = numpy.concatenate([ sanitized_counts, sanitized_tails ], axis=1)
+        return self._with(
+            _aux = aux,
+            _initial = [ 100.0 ] + [ 0.01 ]*m,
+            _bounds = [ (1e-12,1e12) ] + [ (1e-12,1e12) ]*m,
+            )
+
+    def _unpack(self, pack):
+        return Withable()._with(
+            read_variance = pack[0],
+            sample_variance = pack[1:],
+            )
+
+    def _describe_noise(self, param):
+        return "variance = %f^2 / reads + (sample_cv * tail)^2\nsample_cv = [%s]\n" % (
+            numpy.sqrt(param.read_variance),
+            ", ".join([ "%f"%item for item in numpy.sqrt(param.sample_variance) ])
+            )
+
+    def _get_dist(self, param, aux):
+        m = aux.shape[0]//2
+        count = aux[:m]
+        tail = aux[m:]
+        return Mvnormal(
+            zeros((m,)),
+            diag( param.read_variance/count + param.sample_variance*(tail*tail) )
+            )
+
+class Model_t_patseq_v1_per_sample(Model_t_mixin, Model_normal_patseq_v1_per_sample): pass
+
 
 
 
@@ -684,7 +748,7 @@ class Model_normal_patseq_v2(Model):
         aux = numpy.concatenate([ counts, avg_tail[:,None] ], axis=1)
         return self._with(
             _aux = aux,
-            _initial = [ 250.0, 0.01 ],
+            _initial = [ 100.0, 0.01 ],
             _bounds = [ (1e-12,1e12), (1e-12,1e12) ],
             )
 
@@ -695,7 +759,7 @@ class Model_normal_patseq_v2(Model):
             )
 
     def _describe_noise(self, param):
-        return "variance = %f^2 / reads + (%f * tail)^2\n" % (
+        return "variance = %f^2 / reads + (%f * avgtail)^2\n" % (
             numpy.sqrt(param.read_variance),
             numpy.sqrt(param.sample_variance)
             )
@@ -710,6 +774,57 @@ class Model_normal_patseq_v2(Model):
             )
 
 class Model_t_patseq_v2(Model_t_mixin, Model_normal_patseq_v2): pass
+
+
+class Model_normal_patseq_v2_per_sample(Model):
+    """ Differential tail length detection in PAT-Seq.
+        Tail averaged over all samples for noise calculation.
+        Per-sample weighting.
+    """
+    def _configured(self):
+        y = self.data.y.copy()
+        m = y.shape[1]
+        y[ ~numpy.isfinite(y) ] = 0.0
+
+        counts = as_matrix(self.data.context['counts']).copy()
+        assert counts.shape == self.data.y.shape
+
+        # Sanitize counts
+        assert numpy.all( ~numpy.isfinite(self.data.y)[counts == 0] ), "Tail lengths with zero count should be NaN (or NA in R)"
+
+        avg_tail = numpy.maximum(1.0, (y*counts).sum(axis=1)) / numpy.maximum(1.0,counts.sum(axis=1))
+
+        counts = numpy.maximum(counts, 1.0)
+        aux = numpy.concatenate([ counts, avg_tail[:,None] ], axis=1)
+        return self._with(
+            _aux = aux,
+            _initial = [ 100.0 ] + [ 0.01 ]*m,
+            _bounds = [ (1e-12,1e12) ] + [ (1e-12,1e12) ]*m,
+            )
+
+    def _unpack(self, pack):
+        return Withable()._with(
+            read_variance = pack[0],
+            sample_variance = pack[1:],
+            )
+            
+    def _describe_noise(self, param):
+        return "variance = %f^2 / reads + (sample_cv * avgtail)^2\nsample_cv = [%s]\n" % (
+            numpy.sqrt(param.read_variance),
+            ", ".join([ "%f"%item for item in numpy.sqrt(param.sample_variance) ])
+            )
+
+
+    def _get_dist(self, param, aux):
+        m = aux.shape[0] - 1
+        count = aux[:m]
+        tail = aux[m]
+        return Mvnormal(
+            zeros((m,)),
+            diag( param.read_variance/count + param.sample_variance*(tail*tail) )
+            )
+
+class Model_t_patseq_v2_per_sample(Model_t_mixin, Model_normal_patseq_v2_per_sample): pass
 
 
 
@@ -734,7 +849,7 @@ class Model_normal_patseq_v3(Model):
         aux = numpy.concatenate([ counts, avg_tail[:,None] ], axis=1)
         return self._with(
             _aux = aux,
-            _initial = [ 250.0, 0.01 ],
+            _initial = [ 1.0, 0.01 ],
             _bounds = [ (1e-12,1e12), (1e-12,1e12) ],
             )
 
@@ -760,3 +875,13 @@ class Model_normal_patseq_v3(Model):
             )
 
 class Model_t_patseq_v3(Model_t_mixin, Model_normal_patseq_v3): pass
+
+
+
+# Bless PATSEQ v2
+Model_normal_patseq = Model_normal_patseq_v2
+Model_t_patseq = Model_t_patseq_v2
+Model_normal_patseq_per_sample = Model_normal_patseq_v2_per_sample
+Model_t_patseq_per_sample = Model_t_patseq_v2_per_sample
+
+

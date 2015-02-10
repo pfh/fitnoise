@@ -2,14 +2,14 @@
 arg <- commandArgs(T)
 
 if (arg == "1") {
-  model <- "Model_t_patseq()"
-  name <- "patseq1"
+  model <- "Model_t_patseq_v1()"
+  name <- "patseq1a"
 } else if (arg == "2") {
   model <- "Model_t_patseq_v2()"
-  name <- "patseq2"
+  name <- "patseq2a"
 } else if (arg == "3") {
   model <- "Model_t_patseq_v3()"
-  name <- "patseq3"
+  name <- "patseq3a"
 } else {
   stop("Bad arg")
 }
