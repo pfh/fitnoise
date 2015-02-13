@@ -27,7 +27,7 @@ Automatic selection of control genes
 You may not know which genes can be used as control genes, but be fairly certain that most genes could be used as such. In this case, you might do something like:
 
 * run the differential test without control genes
-* pick 50% of genes with largest p-value as control genes
+* pick the 50% of genes with largest p-value as control genes
 * run the differential test again with these control genes
 
 I don't have any experience with how well this works in practice.
