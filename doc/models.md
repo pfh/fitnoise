@@ -9,7 +9,7 @@ Contextual information for noise models
 
 Some noise models require contextual information, such as a weights or counts matrix.
 
-In Python, instead of passing a matrix to `model.fit`, pass an instance of `fitnoise.Dataset`, eg `fitnoise.Dataset(y, {"weights":weights})`.
+In Python, instead of passing a matrix as data to `model.fit`, pass an instance of `fitnoise.Dataset`. A Dataset contains a data matrix and a dictionary of contextual information. eg `fitnoise.Dataset(my_expression_levels, {"weights": my_weights})`.
 
 In R, you can use a Limma `EList` object containing `elist$weights` or `elist$other$counts`, or you can pass `weights=` or `counts=` as extra paramters to `fitnoise.fit`.
 
