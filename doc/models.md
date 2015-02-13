@@ -4,6 +4,15 @@ Noise models
 
 The most typical model to use will be `Model_t()` for microarrays. `Model_t()` can also be used for RNA-Seq in combination with Limma's `voom` function. However we will introduce a couple of simpler models first.
 
+Contextual information for noise models
+---
+
+Some noise models require contextual information, such as a weights or counts matrix.
+
+In Python, instead of passing a matrix to `model.fit`, pass an instance of `fitnoise.Dataset`, eg `fitnoise.Dataset(y, {"weights":weights})`.
+
+In R, you can use a Limma `EList` object containing `elist$weights` or `elist$other$counts`, or you can pass `weights=` or `counts=` as extra paramters to `fitnoise.fit`.
+
 
 
 Model_normal()
