@@ -81,6 +81,6 @@ The accuracy of each tail length is a function of per-read variance and per-samp
 
 `Model_normal_patseq_per_sample()` and `Model_t_patseq_per_sample()` are also available.
 
-*Note:* Model_t_patseq_v1() was used for the Lorne Genome Conference 2015 poster. This cheats slightly by basing the noise on individual tail lengths. I don't think this makes a practical difference, but for the sake of punctilious correctness this current version uses the tail length averaged over all samples (weighted by count).
+**Note:** Model_t_patseq_v1() was used for the Lorne Genome Conference 2015 poster. This cheats slightly by basing the noise on individual tail lengths. I don't think this makes a practical difference, but for the sake of punctilious correctness this current version uses the tail length averaged over all samples (weighted by count).
 
 
