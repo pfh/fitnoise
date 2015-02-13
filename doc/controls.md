@@ -16,7 +16,7 @@ fitted = model.fit(
     controls=controls)
 </pre></td><td><pre>
 fitted &lt;- fitnoise.fit(
-    data, design, model="Model_t()", 
+    data, design, model=" ... ", 
     controls=controls)
 </pre></td></tr></table>
 
