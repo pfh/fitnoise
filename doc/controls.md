@@ -38,5 +38,5 @@ Don't do this.
 Ok, you've been handed some data without replicates and have to make the best of it. Here's what I suggest:
 
 * Set *every* gene as a control gene.
-* Use a "normal" (noise model)[models.md].
+* Use a "normal" [noise model](models.md).
 * Use the resultant list of differentially expressed genes only as a guide for further lab work.
