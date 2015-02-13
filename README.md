@@ -17,7 +17,7 @@ Documentation:
 
 * [What is Fitnoise?](doc/what.md)
 * [How to use Fitnoise](doc/how.md)
-* [Assessing a the quality of a fit](doc/assess.md)
+* [Assessing the quality of a fit](doc/assess.md)
 * [Noise models available](doc/models.md)
 * [Control genes](doc/controls.md) (and what to do if you don't have replicates)
 
