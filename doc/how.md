@@ -7,7 +7,6 @@ This is a basic run-through of how to use Fitnoise.
 You can use Fitnoise either from R+ or Python.
 
 
-
 Loading
 ---
 
@@ -16,7 +15,7 @@ Loading
 |`import fitnoise`|`library(fitnoise)`|
 
 
-Choose a noise model
+Choosing a noise model
 ---
 
 Fitnoise provides a variety of "noise models". `fitnoise.Model_t()` behaves very similarly to Limma.
@@ -41,7 +40,7 @@ fitted &lt;- fitnoise.fit(
 </pre></td></tr></table>
 
 
-* data is our matrix of expression levels. Columns are samples and rows are genes.
+* data is our matrix of expression levels. Columns are samples and rows are genes. Missing values are allowed. In Python, indicate missing values with `numpy.nan`, in R indicate missing values with `NA`.
 
 * design is our design matrix. Columns are coefficients and rows are samples.
 
