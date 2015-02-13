@@ -7,6 +7,9 @@ if (arg == "1") {
 } else if (arg == "2") {
   model <- "Model_t_patseq_v2()"
   name <- "patseq2a"
+} else if (arg == "2ps") {
+  model <- "Model_t_patseq_v2_per_sample()"
+  name <- "patseq2ps"
 } else if (arg == "3") {
   model <- "Model_t_patseq_v3()"
   name <- "patseq3a"

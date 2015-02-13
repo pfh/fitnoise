@@ -243,7 +243,7 @@ class Model(Withable):
             aux=result._aux,
             get_model_cost=lambda param: result._model_cost(result._unpack(param)),
             get_dist=lambda param, aux: result._get_dist(result._unpack(param),aux),
-            initial=result._initial,
+            initial=as_vector( result._initial ),
             bounds=result._bounds,
             use_theano=use_theano,
             verbose=verbose,
@@ -798,21 +798,26 @@ class Model_normal_patseq_v2_per_sample(Model):
         aux = numpy.concatenate([ counts, avg_tail[:,None] ], axis=1)
         return self._with(
             _aux = aux,
-            _initial = [ 100.0 ] + [ 0.01 ]*m,
-            _bounds = [ (1e-12,1e12) ] + [ (1e-12,1e12) ]*m,
+            _initial = [ 100.0 ]*m + [ 0.01 ]*m,
+            _bounds = [ (1e-12,1e12) ]*m + [ (1e-12,1e12) ]*m,
             )
 
     def _unpack(self, pack):
+        m = pack.shape[0] // 2
         return Withable()._with(
-            read_variance = pack[0],
-            sample_variance = pack[1:],
+            read_variance = pack[:m],
+            sample_variance = pack[m:],
             )
             
     def _describe_noise(self, param):
-        return "variance = %f^2 / reads + (sample_cv * avgtail)^2\nsample_cv = [%s]\n" % (
-            numpy.sqrt(param.read_variance),
-            ", ".join([ "%f"%item for item in numpy.sqrt(param.sample_variance) ])
-            )
+        return (
+            "variance = read_sd^2 / reads + (sample_cv * avgtail)^2\n"
+            "read_sd = [%s]\n"
+            "sample_cv = [%s]\n" 
+            % (
+                ", ".join([ "%f"%item for item in numpy.sqrt(param.read_variance) ]),
+                ", ".join([ "%f"%item for item in numpy.sqrt(param.sample_variance) ])
+            ))
 
 
     def _get_dist(self, param, aux):

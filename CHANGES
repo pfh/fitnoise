@@ -1,7 +1,7 @@
 
 2.2 - Add model.fit method.
       Fix to test.fit
-      - Note: bool(numpy.array([0])) == False
+      - Note: bool(numpy.array([0])) == False, argh!
       Fix to Model_normal_patseq, sanitize everything better
       Make patseq v2 the default (blind noise distribution to individual samples)
 
