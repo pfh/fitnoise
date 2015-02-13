@@ -19,7 +19,7 @@ Loading
 Choose a noise model
 ---
 
-Fitnoise provides a variety of "noise models". fitnoise.Model_t behaves very similarly to limma.
+Fitnoise provides a variety of "noise models". `fitnoise.Model_t()` behaves very similarly to Limma.
 
 |Python|R|
 |---|---|
