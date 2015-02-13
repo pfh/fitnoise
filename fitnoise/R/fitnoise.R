@@ -18,23 +18,23 @@ mimic.matrix.names <- function(x, template) {
 
 
 fitnoise.fit <- function(
-        y, design,
+        data, design,
         model="Model_t()",
         noise.design=NULL,
         control.design=NULL, controls=NULL,
         weights=NULL, counts=NULL,
         verbose=FALSE) {
 
-    if (class(y) == "EList") {
-        if (!is.null(y$weights)) {
+    if (class(data) == "EList") {
+        if (!is.null(data$weights)) {
             stopifnot(is.null(weights))
-            weights <- y$weights
+            weights <- data$weights
         }
-        if (!is.null(y$other$counts)) {
+        if (!is.null(data$other$counts)) {
             stopifnot(is.null(counts))
-            counts <- y$other$counts
+            counts <- data$other$counts
         }
-        y <- y$E
+        data <- data$E
     }
 
     if (is.null(noise.design))
@@ -43,15 +43,15 @@ fitnoise.fit <- function(
     pyexec("from fitnoise import *")
 
 
-    y[is.na(y)] <- NaN
+    data[is.na(data)] <- NaN
 
-    pyset("y", y)
+    pyset("data", data)
     pyexec("context = {}")
     if (!is.null(weights))
         pyset("context['weights']", weights)
     if (!is.null(counts))
         pyset("context['counts']", counts)
-    pyexec("dataset = fitnoise.Dataset(y, context)")
+    pyexec("dataset = fitnoise.Dataset(data, context)")
 
     pyset("design", design)
     pyset("noise_design", noise.design)

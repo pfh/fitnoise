@@ -28,7 +28,7 @@ In Python, a weights matrix is given by creating a `fitnoise.Dataset` object wit
 fitnoise.Dataset(y, dict(weights=weights))
 ```
 
-In R, weights are passed as a parameter to `fitnoise.fit` or the `y` parameter of `fitnoise.fit` is given as a Limma `EList` object which includes a weight matrix. Note that this means you can directly use the output of Limma's `voom` function as input to `fitnoise.fit`.
+In R, weights are passed as a parameter to `fitnoise.fit` or the first parameter of `fitnoise.fit` is given as a Limma `EList` object which includes a weight matrix. Note that this means you can directly use the output of Limma's `voom` function as input to `fitnoise.fit`.
 
 
 
