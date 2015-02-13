@@ -1,4 +1,4 @@
-VERSION="2.1"
+VERSION="2.2"
 
 from .env import as_jsonic
 
