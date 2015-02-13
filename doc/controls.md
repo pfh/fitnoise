@@ -11,10 +11,13 @@ Control genes are specified as a boolean vector.
 <table>
 <tr><th>Python</th><th>R</th></tr>
 <tr><td><pre>
-fitted = model.fit(data, design, controls=controls)
+fitted = model.fit(
+    data, design, 
+    controls=controls)
 </pre></td><td><pre>
 fitted &lt;- fitnoise.fit(
-        data, design, model="Model_t()", controls=controls)
+    data, design, model="Model_t()", 
+    controls=controls)
 </pre></td></tr></table>
 
 
