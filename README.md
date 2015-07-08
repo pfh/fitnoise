@@ -11,7 +11,9 @@ Fitnoise is developed by Dr. Paul Harrison for the [RNA Systems Biology Laborato
 
 Overview:
 
-* [Poster presented at ABiC 2014](http://f1000.com/posters/browse/summary/1097121) describes the previous R based Fitnoise.
+* [Poster presented at Lorne Genome Conference 2015](doc/fitnoise-poster-lorne-2015.pdf)
+
+  (An [earlier poster presented at ABiC 2014](http://f1000.com/posters/browse/summary/1097121) describes the previous R based Fitnoise.)
 
 Documentation:
 
