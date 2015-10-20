@@ -75,7 +75,7 @@ run.limma <- function(data, fdr) {
     fit <- eBayes(fit)
     tt <- topTable(
         fit, data$test_coef, 
-        sort="none", number=nrow(fit)
+        sort.by="none", number=nrow(fit)
         )
 
     data$fit <- fit

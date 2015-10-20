@@ -23,7 +23,8 @@ fitnoise.fit <- function(
         noise.design=NULL,
         control.design=NULL, controls=NULL,
         weights=NULL, counts=NULL,
-        verbose=FALSE) {
+        verbose=FALSE,
+        force.param=NULL) {
 
     if (class(data) == "EList") {
         if (!is.null(data$weights)) {
@@ -58,6 +59,7 @@ fitnoise.fit <- function(
     pyset("control_design", control.design)
     pyset("controls", controls)
     pyset_scalar("verbose", verbose)
+    pyset("force_param", force.param)
 
     pyexec(sprintf("fit = %s", model))
     pyexec("fit = fit.fit(
@@ -67,13 +69,18 @@ fitnoise.fit <- function(
         control_design=control_design,
         controls=controls,
         verbose=verbose,
+        force_param=force_param
         )")
 
     list(
         pyfit = pyref("fit"),
         description = pyget("fit.description"),
         param = pyget("as_jsonic( fit.param )"),
+        
+        df = pyget("as_jsonic([ fit.df ])"),
+        deviance = pyget("as_jsonic([ fit.deviance ])"),
         score = pyget("as_jsonic([ fit.score ])"),
+        
         coef = pyget("as_jsonic( fit.coef )"),
         noise.p.values = pyget("as_jsonic( fit.noise_p_values )"),
         noise.combined.p.value = pyget("as_jsonic([ fit.noise_combined_p_value ])"),

@@ -19,4 +19,11 @@ Choosing between noise models
 
 When trying to choose between noise models, or decide on the exact form a noise model should take for some new kind of data, the model with the smallest "noise fit score" is preferable. The smaller the score, the less surprising the data is given that model.
 
+The unit is bits per degree of freedom, if you have one data set that has twice the noise level of another data set its score should be one bit larger.
+
 You could assess whether this score differs significantly between models by bootstrapping.
+
+If the models are nested, you can also use the deviance statistic. If the simpler model is sufficient, the difference in deviances between the two models is expected to follow a chi-square distribution with df the difference in df for the two models (i.e. the number of extra parameters in the more complex model).
+
+Since these are significance tests on large amounts of data, it's likely you will obtain significance. You should also decide whether the improvement is of sufficient magnitude to be worthwhile. This is a subjective judgement.
+

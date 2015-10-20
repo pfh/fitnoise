@@ -50,6 +50,8 @@ To freshen the virtualenv after pulling a new version of Fitnoise from github or
 Installing globally
 ---
 
+On the python side, Fitnoise requires Theano. On the R side, Fitnoise requires rPython, and jsonlite, and limma.
+
 Installing dependencies:
 
     apt-get install python-pip python-numpy python-scipy r-base
@@ -65,7 +67,7 @@ Installing dependencies:
 
 To install Fitnoise with pip:
 
-    pip install fitnoise
+    pip install --upgrade fitnoise
 
     python -m fitnoise
     # This prints out instructions to install the R component
@@ -75,7 +77,13 @@ Alternatively, to install Fitnoise from source:
     python setup.py install
     R CMD INSTALL fitnoise
 
+Alternatively, to install the development version of Fitnoise directly from github:
 
+    pip install --upgrade git+https://github.com/pfh/fitnoise.git#egg=fitnoise
+
+    R
+      install.packages("devtools")
+      devtools::install_github("pfh/fitnoise", subdir="fitnoise")
 
 
 References
@@ -88,3 +96,5 @@ http://bioinf.wehi.edu.au/limma/
 The design of Fitnoise has been influenced by RUV-4, although conceived in different terms. See Berkley statistical department technical report 820:
 
 http://statistics.berkeley.edu/tech-reports/820
+
+

@@ -6,6 +6,13 @@ rpy2
 
 # Required
 
-numpy
+numpy<=1.9
+# numpy 1.10 has an ABI change that was stuffing up Theano (complaining about ufuncs)
+# as at 20 October 2015
+
 scipy
-git+https://github.com/Theano/Theano.git
+
+theano
+#For bleeding edge theano, use
+#git+https://github.com/Theano/Theano.git
+

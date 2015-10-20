@@ -58,10 +58,13 @@ The result contains:
 |`fitted.coef_dists`||List of posterior multivariate distributions of coefficients.|
 |`fitted.averages`|`fitted$averages`|Row averages. Missing values are ignored, nothing special is done beyond this.|
 |`fitted.score`|`fitted$score`|A score of how good the noise fit was, in bits per degree of freedom. When deciding which noise model to use, smaller values are better.|
+|`fitted.deviance`|`fitted$deviance`|Global deviance. May be used to calculate the difference in deviance between two models. (Unlike in a GLM, the absolute value has no meaning. This statistic is just for comparing models not for saying a model is a good fit in an absolute sense.)|
+|`fitted.df`|`fitted$df`|Global degrees of freedom, total degrees of freedom over all features, minus the number of parameters in the model, for use with the deviance statistic. Not to be confused with the prior degrees of freedom estimated in the model!| 
 |`fitted.noise_p_values`|`fitted$noise.p.values`|Vector of "noise p-values". A small value for a particular gene may indicate that the noise model was a poor fit for that gene.|
 |`fitted.noise_combined_p_value`|`fitted$noise.combined.p.value`|Bonferroni corrected combined p-value of the noise p-values. A small value may indicate an overall poor fit for the noise model.|
 |`fitted.description`|`fitted$description`|A summary of various important quantities from the noise fit.|
 
+See ["Assessing the quality of a fit"](assess.md) for how score, deviance, and df are intended to be used.
 
 Testing a hypothesis
 ---

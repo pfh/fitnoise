@@ -6,17 +6,6 @@ Two axes of time:
 - specialization sequence
   source -> bytecode -> ( theano expression )? -> value
 
-A = LL'
-
-
-
-x'Aix
-= x'(LL')ix
-= x'L'i Lix
-= (Li x)' Lix
-
-check L'i = Li' ... yes
-
 """
 
 from .env import *
@@ -26,7 +15,7 @@ import sys
 
 
 def _fit_noise(y, designs, get_model_cost, get_dist, initial,
-               aux, bounds, use_theano, verbose):
+               aux, bounds, use_theano, verbose, force_param=None):
     n,m = y.shape
 
     items = [ ]
@@ -46,6 +35,12 @@ def _fit_noise(y, designs, get_model_cost, get_dist, initial,
         row_retain_tQ2_z2[row] = (retain, tQ2, z2)
 
 
+    if force_param is not None:
+        force_param = as_vector(force_param)
+        assert len(force_param) == len(initial)
+        return Withable()._with(x=force_param, fun=0.0), row_retain_tQ2_z2
+
+
     def score_row(param, aux, retain, tQ2, z2):
         return -(
             get_dist(param, aux)
@@ -54,9 +49,8 @@ def _fit_noise(y, designs, get_model_cost, get_dist, initial,
             .log_density(z2)
             )
 
-
     if len(initial) == 0:
-       return Withable()._with(x=numpy.zeros(0)), row_tQ2_z2
+       return Withable()._with(x=numpy.zeros(0), fun=0.0), row_retain_tQ2_z2
 
     if use_theano and not have_theano:
         warnings.warn("Couldn't import theano, calculations may be slow")
@@ -212,7 +206,8 @@ class Model(Withable):
 
     def fit_noise(self, data,
             design=None,
-            control_design=None, controls=None, use_theano=True,verbose=False):
+            control_design=None, controls=None, use_theano=True,
+            verbose=False, force_param=None):
         data = as_dataset(data)
         design = as_matrix(design)
 
@@ -247,6 +242,7 @@ class Model(Withable):
             bounds=result._bounds,
             use_theano=use_theano,
             verbose=verbose,
+            force_param=force_param
             )
         param = result._unpack(fit.x)
 
@@ -278,11 +274,16 @@ class Model(Withable):
             noise_combined_p_value = min(1,numpy.minimum.reduce(good_p)*len(good_p))
 
         n_residuals = sum(m - item.shape[1] for item in designs)
+        df = n_residuals - len(result._initial)
 
         return result._with(
             optimization_result = fit,
             param = param,
-            score = fit.fun / (log(2.0) * n_residuals),
+            
+            df = df,
+            deviance = fit.fun * 2.0,
+            score = fit.fun / (log(2.0) * df),
+            
             noise_dists = noise_dists,
             noise_p_values = noise_p_values,
             noise_combined_p_value = noise_combined_p_value,
@@ -348,7 +349,7 @@ class Model(Withable):
 
     def fit(self, data,
             design=None, noise_design=None, control_design=None,
-            controls=None, use_theano=True,verbose=False):
+            controls=None, use_theano=True,verbose=False,force_param=None):
         return (
             self
             .fit_noise(
@@ -357,7 +358,8 @@ class Model(Withable):
                 control_design=control_design,
                 controls=controls,
                 use_theano=use_theano,
-                verbose=verbose
+                verbose=verbose,
+                force_param=force_param
                 )
             .fit_coef(design)
             )
