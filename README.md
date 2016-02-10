@@ -79,7 +79,7 @@ Alternatively, to install Fitnoise from source:
 
 Alternatively, to install the development version of Fitnoise directly from github:
 
-    pip install --upgrade git+https://github.com/pfh/fitnoise.git#egg=fitnoise
+    pip install --upgrade 'git+https://github.com/pfh/fitnoise.git#egg=fitnoise'
 
     R
       install.packages("devtools")
