@@ -89,12 +89,9 @@ Alternatively, to install the development version of Fitnoise directly from gith
 References
 ---
 
-Fitnoise copies many features of Limma:
+Fitnoise re-implements various features of the limma Bioconductor package:
 
 http://bioinf.wehi.edu.au/limma/
 
-The design of Fitnoise has been influenced by RUV-4, although conceived in different terms. See Berkley statistical department technical report 820:
-
-http://statistics.berkeley.edu/tech-reports/820
 
 
